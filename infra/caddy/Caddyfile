@@ -1,0 +1,67 @@
+# AgentOps Control Center: edge server (Caddy 2).
+#
+# SITE_ADDRESS controls how Caddy listens:
+#   unset / ":80"           plain HTTP on port 80 (local Docker demo, LAN)
+#   "agentops.example.org"  automatic HTTPS via ACME (ports 80+443 must be public)
+# When serving over HTTPS, also set COOKIE_SECURE=true for the backend.
+{
+	# Admin API is not needed inside the container.
+	admin off
+}
+
+{$SITE_ADDRESS::80} {
+	encode zstd gzip
+
+	# Basic hardening headers. CSP allows same-origin WebSocket (ws/wss) and
+	# the inline bootstrap Swagger UI needs; tighten if the UI changes.
+	header {
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "camera=(), microphone=(), geolocation=()"
+		Cross-Origin-Opener-Policy "same-origin"
+		Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' ws: wss:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+		-Server
+	}
+
+	# REST API (includes /api/docs and /api/openapi.json). Caddy keeps the
+	# original Host header, so the backend's same-host Origin check still works.
+	handle /api/* {
+		reverse_proxy {$BACKEND_UPSTREAM:backend:8080}
+	}
+
+	# WebSocket: reverse_proxy handles the Upgrade handshake transparently.
+	handle /ws/* {
+		reverse_proxy {$BACKEND_UPSTREAM:backend:8080} {
+			# Do not buffer; push frames immediately.
+			flush_interval -1
+		}
+	}
+
+	# Single-page application.
+	handle {
+		root * /srv
+		try_files {path} /index.html
+
+		@immutable path /assets/*
+		header @immutable Cache-Control "public, max-age=31536000, immutable"
+
+		@html path / /index.html
+		header @html Cache-Control "no-cache"
+
+		file_server
+	}
+
+	log {
+		output stdout
+		# Never log WS tickets passed in the query string.
+		format filter {
+			wrap console
+			fields {
+				request>uri query {
+					replace ticket REDACTED
+				}
+			}
+		}
+	}
+}
