@@ -1,8 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
-import { LogOut, Moon, Sun } from 'lucide-react'
-import { RoleBadge, UserAvatar } from '@/components/shared/presence'
-import { Button } from '@/components/ui/button'
+import { ChevronsUpDown, LogOut, Moon, Sun } from 'lucide-react'
+import { UserAvatar } from '@/components/shared/presence'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,10 +11,12 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { logout } from '@/features/auth/session'
+import { ROLE_LABEL } from '@/lib/labels'
+import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
 
-export function UserMenu() {
+export function UserMenu({ compact = false }: { compact?: boolean }) {
   const user = useAuthStore((s) => s.user)
   const qc = useQueryClient()
   const navigate = useNavigate()
@@ -31,25 +32,40 @@ export function UserMenu() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="h-9 gap-2 px-1.5 sm:px-2" data-testid="user-menu">
-          <UserAvatar username={user.username} size="sm" />
-          <span className="hidden text-sm font-medium sm:inline" data-testid="current-username">
-            {user.username}
-          </span>
-        </Button>
+        <button
+          type="button"
+          data-testid="user-menu"
+          aria-label={`Account: ${user.username}`}
+          className={cn(
+            'pressable flex items-center gap-2.5 rounded-md text-left hover:bg-bg-muted',
+            compact ? 'size-9 justify-center' : 'h-11 w-full px-2',
+          )}
+        >
+          <UserAvatar username={user.username} size={compact ? 'sm' : 'md'} />
+          {!compact && (
+            <>
+              <span className="min-w-0 flex-1 leading-tight">
+                <span className="block truncate text-13 font-medium" data-testid="current-username">
+                  {user.username}
+                </span>
+                <span className="block text-xs text-text-tertiary">{ROLE_LABEL[user.role]}</span>
+              </span>
+              <ChevronsUpDown className="size-4 text-text-tertiary" strokeWidth={1.5} />
+            </>
+          )}
+        </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-56">
-        <DropdownMenuLabel className="flex flex-col gap-1">
-          <span>{user.username}</span>
-          <RoleBadge role={user.role} />
+      <DropdownMenuContent align={compact ? 'end' : 'start'} side={compact ? 'bottom' : 'top'} className="w-56">
+        <DropdownMenuLabel>
+          <span className="block font-medium">{user.username}</span>
+          <span className="block text-13 text-text-tertiary">{ROLE_LABEL[user.role]}</span>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem onSelect={toggleTheme}>
           {theme === 'dark' ? <Sun /> : <Moon />}
-          {theme === 'dark' ? 'Light mode' : 'Dark mode'}
+          {theme === 'dark' ? 'Light theme' : 'Dark theme'}
         </DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem variant="destructive" onSelect={() => void onLogout()} data-testid="logout-button">
+        <DropdownMenuItem variant="danger" onSelect={() => void onLogout()} data-testid="logout-button">
           <LogOut /> Log out
         </DropdownMenuItem>
       </DropdownMenuContent>

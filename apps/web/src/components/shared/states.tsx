@@ -1,5 +1,4 @@
-import { AlertCircle, Inbox, RefreshCw } from 'lucide-react'
-import type { ComponentType, ReactNode } from 'react'
+import type { ReactNode } from 'react'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { errorMessage } from '@/lib/api'
@@ -8,30 +7,22 @@ import { cn } from '@/lib/utils'
 export function EmptyState({
   title,
   description,
-  icon: Icon = Inbox,
   action,
   className,
 }: {
   title: string
   description?: ReactNode
-  icon?: ComponentType<{ className?: string }>
   action?: ReactNode
   className?: string
 }) {
   return (
     <div
       data-testid="empty-state"
-      className={cn(
-        'flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed px-6 py-12 text-center',
-        className,
-      )}
+      className={cn('flex flex-col items-start gap-1 py-10 text-left sm:items-center sm:text-center', className)}
     >
-      <div className="mb-1 rounded-full bg-muted p-3">
-        <Icon className="size-5 text-muted-foreground" />
-      </div>
-      <p className="font-medium">{title}</p>
-      {description && <p className="max-w-sm text-sm text-muted-foreground">{description}</p>}
-      {action && <div className="mt-2">{action}</div>}
+      <p className="text-sm font-medium text-text">{title}</p>
+      {description && <p className="max-w-sm text-13 text-text-secondary">{description}</p>}
+      {action && <div className="mt-3">{action}</div>}
     </div>
   )
 }
@@ -48,31 +39,56 @@ export function ErrorState({
   className?: string
 }) {
   return (
-    <div
-      role="alert"
-      data-testid="error-state"
-      className={cn(
-        'flex flex-col items-center justify-center gap-2 rounded-xl border border-destructive/30 bg-destructive/5 px-6 py-10 text-center',
-        className,
-      )}
-    >
-      <AlertCircle className="size-6 text-destructive" />
-      <p className="font-medium">{title}</p>
-      {error !== undefined && <p className="max-w-md text-sm text-muted-foreground">{errorMessage(error)}</p>}
+    <div role="alert" data-testid="error-state" className={cn('flex flex-col items-start gap-1 py-8', className)}>
+      <p className="inline-flex items-center gap-2 text-sm font-medium text-text">
+        <span aria-hidden className="size-2 rounded-full bg-danger-dot" />
+        {title}
+      </p>
+      {error !== undefined && <p className="max-w-md text-13 text-text-secondary">{errorMessage(error)}</p>}
       {onRetry && (
-        <Button variant="outline" size="sm" className="mt-2" onClick={onRetry}>
-          <RefreshCw /> Retry
+        <Button size="sm" className="mt-3" onClick={onRetry}>
+          Retry
         </Button>
       )}
     </div>
   )
 }
 
-export function ListSkeleton({ rows = 5, className }: { rows?: number; className?: string }) {
+/** Row skeleton that mirrors a table/list row (DESIGN: skeletons match the final layout). */
+export function RowsSkeleton({
+  rows = 5,
+  columns = ['w-12', 'w-2/5', 'w-24', 'w-20'],
+  className,
+}: {
+  rows?: number
+  columns?: string[]
+  className?: string
+}) {
   return (
-    <div data-testid="loading-state" aria-busy="true" aria-label="Loading" className={cn('space-y-2', className)}>
+    <div data-testid="loading-state" aria-busy="true" aria-label="Loading" className={cn('divide-y', className)}>
       {Array.from({ length: rows }, (_, i) => (
-        <Skeleton key={i} className="h-12 w-full" />
+        <div key={i} className="flex h-11 items-center gap-6">
+          {columns.map((w, j) => (
+            <Skeleton key={j} className={cn('h-3', w, j === 1 && 'flex-1')} />
+          ))}
+        </div>
+      ))}
+    </div>
+  )
+}
+
+/** Generic list skeleton (contacts, inbox rows). */
+export function ListSkeleton({ rows = 5, className, avatar = false }: { rows?: number; className?: string; avatar?: boolean }) {
+  return (
+    <div data-testid="loading-state" aria-busy="true" aria-label="Loading" className={cn('space-y-1', className)}>
+      {Array.from({ length: rows }, (_, i) => (
+        <div key={i} className="flex items-center gap-3 py-2.5">
+          {avatar && <Skeleton className="size-8 rounded-full" />}
+          <div className="flex-1 space-y-2">
+            <Skeleton className="h-3 w-1/3" />
+            <Skeleton className="h-2.5 w-1/2" />
+          </div>
+        </div>
       ))}
     </div>
   )
@@ -81,10 +97,7 @@ export function ListSkeleton({ rows = 5, className }: { rows?: number; className
 export function FullPageSpinner({ label = 'Loading…' }: { label?: string }) {
   return (
     <div className="flex min-h-dvh items-center justify-center" aria-busy="true">
-      <div className="flex items-center gap-3 text-sm text-muted-foreground">
-        <span className="size-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-        {label}
-      </div>
+      <p className="text-13 text-text-tertiary">{label}</p>
     </div>
   )
 }

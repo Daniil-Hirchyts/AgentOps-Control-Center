@@ -1,12 +1,13 @@
 import { Link } from '@tanstack/react-router'
-import { ArrowLeft, MessagesSquare } from 'lucide-react'
+import { ChevronLeft } from 'lucide-react'
 import { useEffect } from 'react'
-import { ConnectionPill } from '@/components/shared/connection-pill'
-import { RoleBadge, UserAvatar } from '@/components/shared/presence'
+import { PresenceDot, UserAvatar } from '@/components/shared/presence'
 import { EmptyState, ErrorState } from '@/components/shared/states'
-import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
+import { useDocumentTitle } from '@/lib/hooks'
+import { ROLE_LABEL } from '@/lib/labels'
 import type { Id } from '@/lib/types'
+import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/stores/auth'
 import { useRealtimeStore } from '@/stores/realtime'
 import { Composer } from './composer'
@@ -22,7 +23,9 @@ export function ConversationView({ userId }: { userId: Id }) {
   const { sendText, retry, discard } = useSendMessage(userId)
   const typingEmitter = useTypingEmitter(userId)
   const isTyping = useRealtimeStore((s) => Boolean(s.typing[userId]))
+  const wsStatus = useRealtimeStore((s) => s.wsStatus)
   const setActive = useRealtimeStore((s) => s.setActiveConversation)
+  useDocumentTitle(contact ? contact.username : 'Messages')
 
   useEffect(() => {
     setActive(userId)
@@ -31,78 +34,82 @@ export function ConversationView({ userId }: { userId: Id }) {
 
   if (!me) return null
   const notFound = !usersPending && !contact
+  const disconnected = wsStatus === 'reconnecting' || wsStatus === 'offline'
 
   return (
     <div className="flex h-full min-h-0 flex-col" data-testid="conversation">
-      <header className="flex h-14 shrink-0 items-center gap-3 border-b bg-card px-3 sm:px-5">
-        <Button variant="ghost" size="icon-sm" asChild className="md:hidden">
-          <Link to="/messages" aria-label="Back to contacts">
-            <ArrowLeft />
-          </Link>
-        </Button>
+      <header className="flex h-14 shrink-0 items-center gap-2 border-b bg-bg pr-4 pl-1 sm:gap-3 pt-[env(safe-area-inset-top)] sm:px-6 md:pt-0">
+        <Link
+          to="/messages"
+          aria-label="Back to conversations"
+          className="pressable inline-flex size-10 items-center justify-center rounded-md text-text-secondary hover:bg-bg-muted md:hidden"
+        >
+          <ChevronLeft className="size-5" strokeWidth={1.75} />
+        </Link>
         {contact ? (
           <>
-            <UserAvatar username={contact.username} online={contact.online} />
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2">
-                <span className="truncate font-semibold" data-testid="conversation-title">
-                  {contact.username}
-                </span>
-                <RoleBadge role={contact.role} />
-              </div>
-              <p className="text-xs text-muted-foreground">
-                {isTyping ? <span className="text-primary">typing…</span> : contact.online ? 'Online' : 'Offline'}
+            <UserAvatar username={contact.username} />
+            <div className="min-w-0 flex-1 leading-tight">
+              <p className="truncate text-sm font-medium" data-testid="conversation-title">
+                {contact.username}
+              </p>
+              <p className="flex items-center gap-1.5 text-xs text-text-secondary" aria-live="polite">
+                <PresenceDot online={contact.online} username={contact.username} />
+                {isTyping ? 'Typing…' : contact.online ? 'Online' : 'Offline'}
+                <span className="text-text-tertiary">· {ROLE_LABEL[contact.role]}</span>
               </p>
             </div>
           </>
         ) : (
-          <div className="flex-1">{usersPending && <Skeleton className="h-5 w-32" />}</div>
+          <div className="flex flex-1 items-center gap-3">
+            {usersPending && (
+              <>
+                <Skeleton className="size-8 rounded-full" />
+                <div className="space-y-1.5">
+                  <Skeleton className="h-3 w-24" />
+                  <Skeleton className="h-2.5 w-16" />
+                </div>
+              </>
+            )}
+          </div>
         )}
-        <ConnectionPill compact testId="conversation-ws-status" />
       </header>
 
+      {disconnected && (
+        <p role="status" className="shrink-0 border-b bg-bg-subtle px-4 py-2 text-center text-13 text-text-secondary">
+          Reconnecting… New messages will arrive when you’re back online.
+        </p>
+      )}
+
       {notFound ? (
-        <div className="p-6">
-          <EmptyState title="User not found" description="This conversation does not exist." />
+        <div className="flex-1 px-6">
+          <EmptyState title="Conversation not found" description="This person doesn’t exist or was removed." />
         </div>
       ) : conversation.isPending ? (
-        <div className="flex-1 space-y-3 p-5" data-testid="loading-state">
-          <Skeleton className="h-9 w-2/5" />
-          <Skeleton className="ml-auto h-9 w-1/3" />
-          <Skeleton className="h-14 w-1/2" />
-          <Skeleton className="ml-auto h-9 w-1/4" />
-        </div>
+        <ConversationSkeleton />
       ) : conversation.isError ? (
-        <div className="flex-1 p-6">
+        <div className="flex-1 px-6">
           <ErrorState
             error={conversation.error}
             title="Could not load the conversation"
             onRetry={() => void conversation.refetch()}
           />
         </div>
-      ) : conversation.data.length === 0 ? (
-        <div className="flex flex-1 flex-col">
-          <div className="flex flex-1 items-center justify-center p-6">
-            <EmptyState
-              icon={MessagesSquare}
-              title="No messages yet"
-              description={contact ? `Say hello to ${contact.username} 👋` : undefined}
-              className="border-0"
-            />
-          </div>
-          {isTyping && contact && (
-            <div className="px-5 pb-2">
-              <TypingIndicator username={contact.username} />
-            </div>
-          )}
-        </div>
       ) : (
         <MessageList
           messages={conversation.data}
           meId={me.id}
+          otherName={contact?.username ?? '?'}
           onRetry={retry}
           onDiscard={discard}
           footer={isTyping && contact ? <TypingIndicator username={contact.username} /> : null}
+          empty={
+            <EmptyState
+              className="py-16 sm:items-center sm:text-center"
+              title="No messages yet"
+              description={contact ? `Messages between you and ${contact.username} appear here.` : undefined}
+            />
+          }
         />
       )}
 
@@ -114,6 +121,24 @@ export function ConversationView({ userId }: { userId: Id }) {
           placeholder={contact ? `Message ${contact.username}` : 'Write a message…'}
         />
       )}
+    </div>
+  )
+}
+
+function ConversationSkeleton() {
+  const rows = [
+    { mine: false, w: 'w-48' },
+    { mine: true, w: 'w-64' },
+    { mine: true, w: 'w-40' },
+    { mine: false, w: 'w-56' },
+  ]
+  return (
+    <div className="mx-auto w-full max-w-3xl flex-1 space-y-3 px-3 pt-4 sm:px-6" data-testid="loading-state" aria-busy="true">
+      {rows.map((r, i) => (
+        <div key={i} className={cn('flex', r.mine && 'justify-end')}>
+          <Skeleton className={cn('h-9 max-w-[70%] rounded-lg', r.w)} />
+        </div>
+      ))}
     </div>
   )
 }

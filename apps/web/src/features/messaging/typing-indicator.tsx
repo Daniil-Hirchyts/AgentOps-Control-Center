@@ -1,12 +1,15 @@
+import { TypingLoader } from '@/components/prompt-kit/loader'
+import { MessageAvatar } from '@/components/prompt-kit/message'
+
+/** Incoming-side bubble with three dots (prompt-kit "typing" loader). */
 export function TypingIndicator({ username }: { username: string }) {
   return (
-    <div className="mx-auto mt-2 flex max-w-3xl items-center gap-2 text-xs text-muted-foreground" data-testid="typing-indicator">
-      <span className="flex gap-0.5 rounded-full border bg-card px-2.5 py-2">
-        <span className="size-1.5 animate-bounce rounded-full bg-muted-foreground [animation-delay:-0.3s]" />
-        <span className="size-1.5 animate-bounce rounded-full bg-muted-foreground [animation-delay:-0.15s]" />
-        <span className="size-1.5 animate-bounce rounded-full bg-muted-foreground" />
+    <div className="mt-2 flex items-end gap-2" data-testid="typing-indicator">
+      <MessageAvatar name={username} />
+      <span className="inline-flex h-8 items-center rounded-lg rounded-bl-sm bg-bg-muted px-3 text-text-tertiary">
+        <TypingLoader size="sm" />
       </span>
-      {username} is typing…
+      <span className="sr-only">{username} is typing…</span>
     </div>
   )
 }

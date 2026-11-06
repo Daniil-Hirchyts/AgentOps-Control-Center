@@ -1,8 +1,8 @@
 import { useNavigate } from '@tanstack/react-router'
-import { Bot, Loader2 } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
-import { UserAvatar } from '@/components/shared/presence'
+import { CircularLoader } from '@/components/prompt-kit/loader'
+import { PresenceLabel, UserAvatar } from '@/components/shared/presence'
 import { EmptyState, ErrorState, ListSkeleton } from '@/components/shared/states'
 import { Button } from '@/components/ui/button'
 import {
@@ -37,13 +37,13 @@ export function RunAnalysisDialog({ caseId, disabled }: { caseId: Id; disabled?:
     if (reviewerId === null) return
     try {
       const run = await createRun.mutateAsync({ caseId, reviewerId })
-      toast.success(`Analysis started (run #${run.id})`)
+      toast.success(`Analysis started · Run #${run.id}`)
       setOpen(false)
       void navigate({ to: '/operator/runs/$runId', params: { runId: String(run.id) } })
     } catch (err) {
       const msg =
         err instanceof ApiError && err.code === 'llm_unavailable'
-          ? 'The LLM is currently unavailable. Try again shortly.'
+          ? 'The model is unavailable right now. Try again in a moment.'
           : errorMessage(err)
       toast.error('Could not start analysis', { description: msg })
     }
@@ -58,25 +58,24 @@ export function RunAnalysisDialog({ caseId, disabled }: { caseId: Id; disabled?:
       }}
     >
       <DialogTrigger asChild>
-        <Button disabled={disabled} data-testid="run-analysis-button">
-          <Bot /> Run AI analysis
+        <Button variant="primary" disabled={disabled} data-testid="run-analysis-button">
+          Run analysis
         </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Run AI analysis</DialogTitle>
+          <DialogTitle>Run analysis</DialogTitle>
           <DialogDescription>
-            Choose the reviewer who must approve any action the agent proposes. Nothing is executed without their
-            approval.
+            Pick the reviewer who approves the agent’s recommendation. Nothing is executed without their decision.
           </DialogDescription>
         </DialogHeader>
-        <div role="radiogroup" aria-label="Reviewer" className="max-h-72 space-y-1.5 overflow-y-auto" data-testid="reviewer-picker">
+        <div role="radiogroup" aria-label="Reviewer" className="-mx-1 max-h-72 space-y-1 overflow-y-auto overscroll-contain px-1 py-1" data-testid="reviewer-picker">
           {users.isPending ? (
-            <ListSkeleton rows={3} />
+            <ListSkeleton rows={3} avatar />
           ) : users.isError ? (
             <ErrorState error={users.error} onRetry={() => void users.refetch()} />
           ) : reviewers.length === 0 ? (
-            <EmptyState title="No reviewers available" description="Register a REVIEWER account first." />
+            <EmptyState title="No reviewers yet" description="Someone needs a reviewer account before you can run an analysis." />
           ) : (
             reviewers.map((r) => {
               const checked = reviewerId === r.id
@@ -89,19 +88,20 @@ export function RunAnalysisDialog({ caseId, disabled }: { caseId: Id; disabled?:
                   data-testid={`reviewer-option-${r.username}`}
                   onClick={() => setReviewerId(r.id)}
                   className={cn(
-                    'flex w-full items-center gap-3 rounded-lg border px-3 py-2.5 text-left transition-colors outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50',
-                    checked ? 'border-primary bg-accent/60' : 'hover:bg-muted/60',
+                    'pressable flex h-14 w-full items-center gap-3 rounded-lg border px-3 text-left',
+                    checked ? 'border-accent-solid bg-accent-subtle' : 'hover:bg-bg-subtle',
                   )}
                 >
-                  <UserAvatar username={r.username} online={r.online} />
+                  <UserAvatar username={r.username} />
                   <span className="flex-1">
                     <span className="block text-sm font-medium">{r.username}</span>
-                    <span className="block text-xs text-muted-foreground">{r.online ? 'Online now' : 'Offline'}</span>
+                    <PresenceLabel online={r.online} className="text-13 text-text-secondary" />
                   </span>
                   <span
+                    aria-hidden
                     className={cn(
-                      'size-4 rounded-full border-2',
-                      checked ? 'border-primary bg-primary shadow-[inset_0_0_0_2px_var(--card)]' : 'border-muted-foreground/40',
+                      'size-4 shrink-0 rounded-full border',
+                      checked ? 'border-[5px] border-accent-solid' : 'border-border-strong',
                     )}
                   />
                 </button>
@@ -110,11 +110,14 @@ export function RunAnalysisDialog({ caseId, disabled }: { caseId: Id; disabled?:
           )}
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)}>
-            Cancel
-          </Button>
-          <Button onClick={() => void submit()} disabled={reviewerId === null || createRun.isPending} data-testid="start-run-submit">
-            {createRun.isPending && <Loader2 className="animate-spin" />}
+          <Button onClick={() => setOpen(false)}>Cancel</Button>
+          <Button
+            variant="primary"
+            onClick={() => void submit()}
+            disabled={reviewerId === null || createRun.isPending}
+            data-testid="start-run-submit"
+          >
+            {createRun.isPending && <CircularLoader size="sm" className="text-current" />}
             Start analysis
           </Button>
         </DialogFooter>

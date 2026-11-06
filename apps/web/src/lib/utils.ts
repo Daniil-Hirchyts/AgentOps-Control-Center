@@ -34,6 +34,15 @@ export function formatDateTime(iso: string | null | undefined): string {
   return d.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })
 }
 
+/** Date-only value (`2026-10-28`) or timestamp → "Oct 28, 2026". Date-only strings are read as local dates. */
+export function formatDate(value: string | null | undefined): string {
+  if (!value) return '—'
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value)
+  const d = m ? new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])) : new Date(value)
+  if (Number.isNaN(d.getTime())) return value
+  return d.toLocaleDateString(undefined, { dateStyle: 'medium' })
+}
+
 export function formatTime(iso: string): string {
   const d = new Date(iso)
   if (Number.isNaN(d.getTime())) return ''
@@ -72,5 +81,11 @@ export function humanize(s: string): string {
 }
 
 export function initials(name: string): string {
-  return name.slice(0, 2).toUpperCase()
+  return name.slice(0, 1).toUpperCase()
+}
+
+/** Ratio of an invoice amount to the vendor's historical average (e.g. 11.6 → "11.6× average"). */
+export function deviation(invoice: { amount: number; historicalAverage?: number | null }): number | null {
+  const avg = invoice.historicalAverage
+  return avg && avg > 0 ? invoice.amount / avg : null
 }

@@ -1,15 +1,16 @@
 import { Link } from '@tanstack/react-router'
-import { ScrollText } from 'lucide-react'
 import { PageContainer } from '@/components/layout/app-shell'
 import { PageHeader } from '@/components/shared/page-header'
-import { EmptyState, ErrorState, ListSkeleton } from '@/components/shared/states'
-import { Card } from '@/components/ui/card'
+import { EmptyState, ErrorState, RowsSkeleton } from '@/components/shared/states'
+import { Dot } from '@/components/shared/status'
 import { NativeSelect } from '@/components/ui/native-select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { useRuns } from '@/features/agents/hooks'
-import { auditSummary } from '@/features/audit/summary'
 import { useAuditEvents } from '@/features/audit/hooks'
-import { formatDateTime, humanize } from '@/lib/utils'
+import { auditSummary } from '@/features/audit/summary'
+import { useDocumentTitle } from '@/lib/hooks'
+import { AUDIT_EVENT_TONE, auditEventLabel } from '@/lib/labels'
+import { formatDateTime } from '@/lib/utils'
 
 export function AuditPage({
   agentRunId,
@@ -18,6 +19,7 @@ export function AuditPage({
   agentRunId?: number
   onRunChange: (id: number | undefined) => void
 }) {
+  useDocumentTitle(agentRunId ? `Audit log · Run #${agentRunId}` : 'Audit log')
   const audit = useAuditEvents({ agentRunId })
   const runs = useRuns()
   const events = [...(audit.data?.items ?? [])].reverse()
@@ -26,9 +28,9 @@ export function AuditPage({
     <PageContainer>
       <PageHeader
         title="Audit log"
-        description="Immutable trail of every agent step, LLM call and human decision."
+        meta="Append-only record of every agent step and human decision."
         actions={
-          <div className="w-64">
+          <div className="w-64 max-w-full">
             <NativeSelect
               aria-label="Filter by run"
               data-testid="audit-run-filter"
@@ -46,50 +48,59 @@ export function AuditPage({
         }
       />
       {audit.isPending ? (
-        <ListSkeleton rows={8} />
+        <RowsSkeleton rows={10} columns={['w-28', 'w-36', 'w-10', 'w-16', 'w-1/3']} />
       ) : audit.isError ? (
         <ErrorState error={audit.error} onRetry={() => void audit.refetch()} />
       ) : events.length === 0 ? (
-        <EmptyState icon={ScrollText} title="No audit events" description="Events appear as soon as a run starts." />
+        <EmptyState title="No events yet" description="Events are recorded as soon as a run starts." />
       ) : (
-        <Card className="py-1">
-          <Table data-testid="audit-table">
-            <TableHeader>
-              <TableRow className="hover:bg-transparent">
-                <TableHead>Time</TableHead>
-                <TableHead>Event</TableHead>
-                <TableHead>Run</TableHead>
-                <TableHead>Actor</TableHead>
-                <TableHead>Details</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {events.map((e) => (
+        <Table data-testid="audit-table">
+          <TableHeader>
+            <TableRow>
+              <TableHead>Time</TableHead>
+              <TableHead>Event</TableHead>
+              <TableHead>Run</TableHead>
+              <TableHead className="hidden sm:table-cell">Actor</TableHead>
+              <TableHead className="hidden md:table-cell">Details</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {events.map((e) => {
+              const summary = auditSummary(e)
+              return (
                 <TableRow key={e.id} data-testid="audit-row">
-                  <TableCell className="text-xs text-muted-foreground">{formatDateTime(e.createdAt)}</TableCell>
-                  <TableCell className="font-medium">{humanize(e.eventType)}</TableCell>
+                  <TableCell className="text-13 text-text-secondary tabular-nums">{formatDateTime(e.createdAt)}</TableCell>
+                  <TableCell>
+                    <span className="inline-flex items-center gap-2">
+                      <Dot tone={AUDIT_EVENT_TONE[e.eventType] ?? 'neutral'} className="size-1.5" />
+                      {auditEventLabel(e.eventType)}
+                    </span>
+                  </TableCell>
                   <TableCell>
                     {e.agentRunId ? (
                       <Link
                         to="/operator/runs/$runId"
                         params={{ runId: String(e.agentRunId) }}
-                        className="font-mono text-xs text-primary hover:underline"
+                        className="font-mono text-13 text-accent-text tabular-nums hover:underline"
                       >
                         #{e.agentRunId}
                       </Link>
                     ) : (
-                      '—'
+                      <span className="text-text-tertiary">—</span>
                     )}
                   </TableCell>
-                  <TableCell>{e.actorUsername ?? <span className="text-muted-foreground">system</span>}</TableCell>
-                  <TableCell className="max-w-md truncate text-xs text-muted-foreground" title={JSON.stringify(e.payload)}>
-                    {auditSummary(e) ?? JSON.stringify(e.payload)}
+                  <TableCell className="hidden text-text-secondary sm:table-cell">{e.actorUsername ?? 'System'}</TableCell>
+                  <TableCell
+                    className="hidden max-w-md truncate text-13 text-text-secondary md:table-cell"
+                    title={summary ?? JSON.stringify(e.payload)}
+                  >
+                    {summary ?? <span className="font-mono text-xs text-text-tertiary">{JSON.stringify(e.payload)}</span>}
                   </TableCell>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </Card>
+              )
+            })}
+          </TableBody>
+        </Table>
       )}
     </PageContainer>
   )

@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router'
-import { Bell, BellOff } from 'lucide-react'
+import { Bell } from 'lucide-react'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
@@ -25,48 +25,58 @@ export function NotificationBell() {
           variant="ghost"
           size="icon"
           className="relative"
-          aria-label={unread ? `Notifications (${unread} unread)` : 'Notifications'}
+          aria-label={unread ? `Notifications, ${unread} unread` : 'Notifications'}
           data-testid="notification-bell"
         >
-          <Bell />
+          <Bell strokeWidth={1.5} />
           {unread > 0 && (
             <span
               data-testid="notification-count"
-              className="absolute top-1 right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold text-white"
+              className="absolute top-1 right-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-accent-solid px-1 text-[10px] font-semibold text-accent-contrast tabular-nums ring-2 ring-bg"
             >
               {unread > 9 ? '9+' : unread}
             </span>
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[min(22rem,calc(100vw-2rem))]">
-        <div className="flex items-center justify-between border-b px-4 py-2.5">
-          <p className="text-sm font-semibold">Notifications</p>
+      <PopoverContent align="start" className="w-[min(22rem,calc(100vw-1.5rem))]">
+        <div className="flex h-11 items-center justify-between border-b px-4">
+          <p className="text-13 font-medium">Notifications</p>
           {unread > 0 && (
-            <button type="button" className="text-xs text-primary hover:underline" onClick={markAllRead}>
+            <button
+              type="button"
+              className="-mr-2 h-8 rounded-md px-2 text-13 text-text-secondary hover:text-text"
+              onClick={markAllRead}
+            >
               Mark all read
             </button>
           )}
         </div>
         {notifications.length === 0 ? (
-          <div className="flex flex-col items-center gap-2 px-4 py-8 text-center text-sm text-muted-foreground">
-            <BellOff className="size-5" />
-            No approval activity yet
-          </div>
+          <p className="px-4 py-8 text-center text-13 text-text-tertiary">Approval activity will show up here.</p>
         ) : (
-          <ul className="max-h-80 overflow-y-auto py-1">
+          <ul className="max-h-80 overflow-y-auto overscroll-contain py-1">
             {notifications.map((n) => (
               <li key={n.id}>
                 <Link
                   to={n.href ?? '/'}
                   onClick={() => setOpen(false)}
-                  className={cn('flex gap-3 px-4 py-2.5 text-sm hover:bg-muted', !n.read && 'bg-accent/40')}
+                  className="flex gap-3 px-4 py-2.5 transition-colors duration-100 hover:bg-bg-muted"
                 >
-                  <span className={cn('mt-1.5 size-2 shrink-0 rounded-full', n.read ? 'bg-transparent' : 'bg-primary')} />
+                  <span
+                    aria-hidden
+                    className={cn('mt-1.5 size-1.5 shrink-0 rounded-full', n.read ? 'bg-transparent' : 'bg-accent-solid')}
+                  />
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate font-medium">{n.title}</span>
-                    {n.description && <span className="block truncate text-xs text-muted-foreground">{n.description}</span>}
-                    <span className="block text-[11px] text-muted-foreground">
+                    <span className="block truncate text-13 font-medium" title={n.title}>
+                      {n.title}
+                    </span>
+                    {n.description && (
+                      <span className="block truncate text-13 text-text-secondary" title={n.description}>
+                        {n.description}
+                      </span>
+                    )}
+                    <span className="block text-xs text-text-tertiary tabular-nums">
                       {formatRelative(new Date(n.createdAt).toISOString())}
                     </span>
                   </span>

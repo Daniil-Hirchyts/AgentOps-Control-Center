@@ -67,6 +67,9 @@ describe('Conversation', () => {
     const optimistic = screen.getAllByTestId('message-bubble').at(-1)!
     expect(optimistic).toHaveTextContent('On it!')
     expect(optimistic).toHaveAttribute('data-delivery', 'sending')
+    // only newly arrived messages animate in; history does not
+    expect(optimistic.closest('.animate-message-in')).not.toBeNull()
+    expect(screen.getAllByTestId('message-bubble')[0]!.closest('.animate-message-in')).toBeNull()
 
     // server echo with authoritative id
     act(() => {

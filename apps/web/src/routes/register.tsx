@@ -3,13 +3,15 @@ import { toast } from 'sonner'
 import { AuthLayout } from '@/features/auth/auth-layout'
 import { RegisterForm } from '@/features/auth/register-form'
 import { api } from '@/lib/api'
+import { useDocumentTitle } from '@/lib/hooks'
 import { homePathForRole, useAuthStore } from '@/stores/auth'
 
 export function RegisterPage() {
   const navigate = useNavigate()
   const setSession = useAuthStore((s) => s.setSession)
+  useDocumentTitle('Create account')
   return (
-    <AuthLayout title="Create an account" subtitle="Join your team's AgentOps workspace">
+    <AuthLayout title="Create an account">
       <RegisterForm
         onSuccess={async (account, password) => {
           toast.success(`Account ${account.username} created`)
@@ -22,9 +24,9 @@ export function RegisterPage() {
           }
         }}
       />
-      <p className="mt-5 text-center text-sm text-muted-foreground">
+      <p className="mt-6 text-13 text-text-secondary">
         Already registered?{' '}
-        <Link to="/login" className="font-medium text-primary hover:underline">
+        <Link to="/login" className="font-medium text-accent-text hover:underline">
           Sign in
         </Link>
       </p>

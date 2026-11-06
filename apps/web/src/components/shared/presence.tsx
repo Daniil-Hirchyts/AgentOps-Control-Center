@@ -1,29 +1,33 @@
-import { cn, initials } from '@/lib/utils'
+import { ROLE_LABEL } from '@/lib/labels'
 import type { Role } from '@/lib/types'
+import { cn, initials } from '@/lib/utils'
 
 export function PresenceDot({ online, username, className }: { online: boolean; username?: string; className?: string }) {
   return (
     <span
       data-testid={username ? `presence-${username}` : undefined}
       data-online={online ? 'true' : 'false'}
-      title={online ? 'Online' : 'Offline'}
-      aria-label={online ? 'Online' : 'Offline'}
+      aria-hidden
       className={cn(
-        'inline-block size-2.5 shrink-0 rounded-full ring-2 ring-card',
-        online ? 'bg-emerald-500' : 'bg-zinc-300 dark:bg-zinc-600',
+        'inline-block size-2 shrink-0 rounded-full',
+        online ? 'bg-success-dot' : 'border border-neutral-dot bg-transparent',
         className,
       )}
     />
   )
 }
 
-const avatarTone = [
-  'bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300',
-  'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300',
-  'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300',
-  'bg-sky-100 text-sky-700 dark:bg-sky-950 dark:text-sky-300',
-  'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300',
-]
+/** Presence = dot + text label. */
+export function PresenceLabel({ online, username, className }: { online: boolean; username?: string; className?: string }) {
+  return (
+    <span className={cn('inline-flex items-center gap-1.5', className)}>
+      <PresenceDot online={online} username={username} />
+      {online ? 'Online' : 'Offline'}
+    </span>
+  )
+}
+
+const SIZE = { xs: 'size-6 text-[10px]', sm: 'size-7 text-[11px]', md: 'size-8 text-xs', lg: 'size-9 text-xs' }
 
 export function UserAvatar({
   username,
@@ -33,41 +37,29 @@ export function UserAvatar({
 }: {
   username: string
   online?: boolean
-  size?: 'sm' | 'md'
+  size?: keyof typeof SIZE
   className?: string
 }) {
-  const tone = avatarTone[[...username].reduce((a, c) => a + c.charCodeAt(0), 0) % avatarTone.length]
   return (
     <span className={cn('relative inline-flex shrink-0', className)}>
       <span
         className={cn(
-          'inline-flex items-center justify-center rounded-full font-semibold',
-          size === 'sm' ? 'size-7 text-[11px]' : 'size-9 text-xs',
-          tone,
+          'avatar-outline inline-flex items-center justify-center rounded-full bg-bg-muted font-medium text-text-secondary',
+          SIZE[size],
         )}
         aria-hidden
       >
         {initials(username)}
       </span>
       {online !== undefined && (
-        <PresenceDot online={online} username={username} className="absolute -right-0.5 -bottom-0.5" />
+        <span className="absolute -right-0.5 -bottom-0.5 rounded-full bg-surface p-[2px]">
+          <PresenceDot online={online} username={username} className="block" />
+        </span>
       )}
     </span>
   )
 }
 
-export function RoleBadge({ role, className }: { role: Role; className?: string }) {
-  return (
-    <span
-      className={cn(
-        'inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-semibold tracking-wide uppercase',
-        role === 'REVIEWER'
-          ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
-          : 'bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300',
-        className,
-      )}
-    >
-      {role === 'REVIEWER' ? 'Reviewer' : 'Operator'}
-    </span>
-  )
+export function RoleLabel({ role, className }: { role: Role; className?: string }) {
+  return <span className={cn('text-text-tertiary', className)}>{ROLE_LABEL[role]}</span>
 }

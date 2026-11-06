@@ -1,71 +1,39 @@
 import { Link } from '@tanstack/react-router'
-import { ArrowLeft, Bot, Cpu, MessageSquare, ScrollText, UserCheck } from 'lucide-react'
+import type { ReactNode } from 'react'
+import { CircularLoader } from '@/components/prompt-kit/loader'
+import { Reasoning, ReasoningContent, ReasoningTrigger } from '@/components/prompt-kit/reasoning'
+import { Steps, StepsContent, StepsTrigger } from '@/components/prompt-kit/steps'
+import { TextShimmer } from '@/components/prompt-kit/text-shimmer'
 import { PageContainer } from '@/components/layout/app-shell'
 import { InvoiceDetails } from '@/components/shared/invoice-details'
-import { PageHeader } from '@/components/shared/page-header'
+import { BackLink, MetaDot, PageHeader, Section } from '@/components/shared/page-header'
 import { ErrorState, ListSkeleton } from '@/components/shared/states'
-import { ApprovalStatusBadge, RiskBadge, RunStatusBadge } from '@/components/shared/status-badge'
+import { ApprovalStatusBadge, RiskBadge, RunStatusBadge } from '@/components/shared/status'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
-import { useRun } from '@/features/agents/hooks'
+import { isRunActive, useRun } from '@/features/agents/hooks'
 import { AuditEventList } from '@/features/audit/audit-event-list'
 import { useAuditEvents } from '@/features/audit/hooks'
 import { useUsers } from '@/features/messaging/hooks'
 import { ApiError } from '@/lib/api'
-import type { AgentRunDto, AuditEventDto, RunStatus } from '@/lib/types'
-import { RUN_STATUSES } from '@/lib/types'
-import { formatDateTime, humanize } from '@/lib/utils'
-
-interface Step {
-  status: RunStatus
-  at: string
-}
-
-function isRunStatus(v: unknown): v is RunStatus {
-  return typeof v === 'string' && (RUN_STATUSES as readonly string[]).includes(v)
-}
-
-/** Status history derived from `run_status_changed` audit events (falls back to current status). */
-export function deriveTimeline(run: AgentRunDto, events: AuditEventDto[]): Step[] {
-  const steps: Step[] = [{ status: 'PENDING', at: run.createdAt }]
-  for (const e of events) {
-    if (e.eventType !== 'run_status_changed') continue
-    const to = e.payload.to ?? e.payload.toStatus ?? e.payload.status
-    if (isRunStatus(to) && steps[steps.length - 1]?.status !== to) steps.push({ status: to, at: e.createdAt })
-  }
-  if (steps[steps.length - 1]?.status !== run.status) steps.push({ status: run.status, at: run.updatedAt })
-  return steps
-}
+import { useDocumentTitle } from '@/lib/hooks'
+import { actionLabel, LLM_MODE_LABEL } from '@/lib/labels'
+import type { AgentRunDto } from '@/lib/types'
+import { formatDateTime } from '@/lib/utils'
 
 export function RunDetailPage({ runId }: { runId: number }) {
   const run = useRun(runId)
   const audit = useAuditEvents({ agentRunId: runId })
   const users = useUsers()
+  useDocumentTitle(`Run #${runId}`)
+  const back = <BackLink to="/operator/runs">Runs</BackLink>
 
-  const back = (
-    <Link to="/operator/runs" className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
-      <ArrowLeft className="size-3" /> Runs
-    </Link>
-  )
-
-  if (run.isPending) {
-    return (
-      <PageContainer>
-        <Skeleton className="mb-6 h-8 w-72" />
-        <div className="grid gap-6 lg:grid-cols-3">
-          <Skeleton className="h-72 lg:col-span-2" />
-          <Skeleton className="h-72" />
-        </div>
-      </PageContainer>
-    )
-  }
+  if (run.isPending) return <RunDetailSkeleton />
   if (run.isError) {
     return (
       <PageContainer>
         {back}
         <ErrorState
-          className="mt-4"
           error={run.error}
           title={run.error instanceof ApiError && run.error.isNotFound ? 'Run not found' : 'Could not load run'}
           onRetry={() => void run.refetch()}
@@ -77,202 +45,217 @@ export function RunDetailPage({ runId }: { runId: number }) {
   const r = run.data
   const reviewer = users.data?.find((u) => u.id === r.reviewerId)
   const reviewerName = r.approval?.reviewerUsername ?? reviewer?.username ?? `user #${r.reviewerId}`
-  const timeline = deriveTimeline(r, audit.data?.items ?? [])
+  const events = audit.data?.items ?? []
 
   return (
     <PageContainer>
       <PageHeader
         back={back}
-        title={
-          <span className="flex flex-wrap items-center gap-3">
-            Run #{r.id}
-            <RunStatusBadge status={r.status} className="text-sm" />
-          </span>
-        }
-        description={
-          <span>
-            Case{' '}
+        title={<span className="tabular-nums">Run #{r.id}</span>}
+        meta={
+          <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+            <RunStatusBadge status={r.status} />
+            <MetaDot />
             <Link
               to="/operator/cases/$caseId"
               params={{ caseId: String(r.caseId) }}
-              className="font-medium text-primary hover:underline"
+              className="text-text hover:underline"
             >
               {r.caseTitle}
-            </Link>{' '}
-            · started {formatDateTime(r.createdAt)}
+            </Link>
+            <MetaDot />
+            <span className="tabular-nums">Started {formatDateTime(r.createdAt)}</span>
           </span>
         }
         actions={
-          <Button variant="outline" asChild data-testid="discuss-with-reviewer">
+          <Button asChild data-testid="discuss-with-reviewer">
             <Link to="/messages/$userId" params={{ userId: String(r.reviewerId) }}>
-              <MessageSquare /> Discuss with {reviewerName}
+              Message {reviewerName}
             </Link>
           </Button>
         }
       />
 
-      <Card className="mb-6 py-4">
-        <CardContent>
-          <ol className="flex flex-wrap items-center gap-x-2 gap-y-3" aria-label="Status timeline" data-testid="run-timeline">
-            {timeline.map((s, i) => (
-              <li key={`${s.status}-${i}`} className="flex items-center gap-2">
-                <div className="flex flex-col items-start gap-1">
-                  <RunStatusBadgeLite status={s.status} current={i === timeline.length - 1} />
-                  <span className="pl-1 text-[10px] text-muted-foreground">{formatDateTime(s.at)}</span>
-                </div>
-                {i < timeline.length - 1 && <span className="mb-4 h-px w-6 bg-border sm:w-10" aria-hidden />}
-              </li>
-            ))}
-          </ol>
-        </CardContent>
-      </Card>
+      <div className="grid gap-10 lg:grid-cols-[minmax(0,2fr)_minmax(18rem,1fr)]">
+        <div className="min-w-0 space-y-10">
+          <Section
+            title="Analysis"
+            aside={
+              <span className="truncate font-mono text-xs text-text-tertiary" title={`${r.modelIdentifier} · ${LLM_MODE_LABEL[r.llmMode]}`}>
+                {r.modelIdentifier} · {r.llmMode} · {r.attempts} {r.attempts === 1 ? 'attempt' : 'attempts'}
+              </span>
+            }
+            data-testid="analysis-card"
+          >
+            <Analysis run={r} />
+          </Section>
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        <div className="space-y-6 lg:col-span-2">
-          <Card data-testid="analysis-card">
-            <CardHeader>
-              <div>
-                <CardTitle className="flex items-center gap-2">
-                  <Bot className="size-4 text-primary" /> AI analysis
-                </CardTitle>
-                <CardDescription className="mt-1 flex items-center gap-1.5">
-                  <Cpu className="size-3" />
-                  <span className="font-mono">{r.modelIdentifier}</span>
-                  <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-semibold uppercase">
-                    {r.llmMode}
-                  </span>
-                  · {r.attempts} attempt{r.attempts === 1 ? '' : 's'}
-                </CardDescription>
-              </div>
-              {r.output && <RiskBadge level={r.output.riskLevel} />}
-            </CardHeader>
-            <CardContent>
-              {r.output ? (
-                <div className="space-y-4">
-                  <div>
-                    <p className="text-xs font-medium text-muted-foreground">Reasoning</p>
-                    <p className="mt-1 text-sm leading-relaxed whitespace-pre-wrap" data-testid="analysis-reasoning">
-                      {r.output.reasoningSummary}
-                    </p>
-                  </div>
-                  <div className="flex flex-wrap gap-6">
-                    <div>
-                      <p className="text-xs font-medium text-muted-foreground">Recommended action</p>
-                      <p className="mt-1 font-mono text-sm">{r.output.recommendedAction}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs font-medium text-muted-foreground">Requires approval</p>
-                      <p className="mt-1 text-sm">{r.output.requiresApproval ? 'Yes' : 'No'}</p>
-                    </div>
-                  </div>
-                </div>
-              ) : r.error ? (
-                <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm" role="alert">
-                  <p className="font-medium text-destructive">Analysis failed</p>
-                  <p className="mt-1 text-muted-foreground">{r.error}</p>
-                  <p className="mt-2 text-xs text-muted-foreground">No action was executed (fail-safe).</p>
-                </div>
-              ) : (
-                <div className="flex items-center gap-3 py-6 text-sm text-muted-foreground">
-                  <span className="size-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-                  The agent is analysing the invoice…
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Invoice snapshot</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <InvoiceDetails invoice={r.inputSnapshot} />
-            </CardContent>
-          </Card>
+          <Section title="Invoice">
+            <InvoiceDetails invoice={r.inputSnapshot} />
+          </Section>
         </div>
 
-        <div className="space-y-6">
-          <Card data-testid="approval-card">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <UserCheck className="size-4 text-primary" /> Human approval
-              </CardTitle>
-              {r.approval && <ApprovalStatusBadge status={r.approval.status} />}
-            </CardHeader>
-            <CardContent className="space-y-3 text-sm">
-              <Row label="Reviewer" value={reviewerName} />
+        <div className="min-w-0 space-y-10">
+          <Section
+            title="Approval"
+            aside={r.approval ? <ApprovalStatusBadge status={r.approval.status} /> : null}
+            data-testid="approval-card"
+          >
+            <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 text-sm">
+              <Row label="Reviewer">{reviewerName}</Row>
               {r.approval ? (
                 <>
-                  <Row label="Proposed action" value={<span className="font-mono">{r.approval.proposedAction}</span>} />
-                  <Row label="Requested" value={formatDateTime(r.approval.createdAt)} />
+                  <Row label="Proposed action">{actionLabel(r.approval.proposedAction)}</Row>
+                  <Row label="Requested">
+                    <span className="tabular-nums">{formatDateTime(r.approval.createdAt)}</span>
+                  </Row>
                   {r.approval.status !== 'PENDING' && (
                     <>
-                      <Row
-                        label="Decided by"
-                        value={r.approval.decidedBy === r.approval.reviewerId ? r.approval.reviewerUsername : `user #${r.approval.decidedBy}`}
-                      />
-                      <Row label="Decided" value={formatDateTime(r.approval.decidedAt)} />
-                      <Row
-                        label="Reason"
-                        value={r.approval.decisionReason || <span className="text-muted-foreground">No reason given</span>}
-                      />
+                      <Row label="Decided by">
+                        {r.approval.decidedBy === r.approval.reviewerId
+                          ? r.approval.reviewerUsername
+                          : `user #${r.approval.decidedBy}`}
+                      </Row>
+                      <Row label="Decided">
+                        <span className="tabular-nums">{formatDateTime(r.approval.decidedAt)}</span>
+                      </Row>
+                      <Row label="Reason">
+                        {r.approval.decisionReason ? (
+                          <span className="whitespace-pre-wrap">“{r.approval.decisionReason}”</span>
+                        ) : (
+                          <span className="text-text-tertiary">None given</span>
+                        )}
+                      </Row>
                     </>
                   )}
                 </>
-              ) : (
-                <p className="text-muted-foreground">
-                  {r.output && !r.output.requiresApproval
-                    ? 'No approval needed — the agent recommended no action.'
-                    : 'No approval requested yet.'}
-                </p>
-              )}
-            </CardContent>
-          </Card>
+              ) : null}
+            </dl>
+            {!r.approval && (
+              <p className="mt-3 text-13 text-text-secondary">
+                {r.output && !r.output.requiresApproval
+                  ? 'No approval needed. The agent recommended no action.'
+                  : isRunActive(r.status)
+                    ? 'An approval is requested once the analysis finishes.'
+                    : 'No approval was requested.'}
+              </p>
+            )}
+            {r.approval?.status === 'PENDING' && (
+              <p className="mt-3 text-13 text-text-secondary">Waiting for {reviewerName} to decide.</p>
+            )}
+          </Section>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <ScrollText className="size-4 text-primary" /> Audit trail
-              </CardTitle>
-              <Link
-                to="/operator/audit"
-                search={{ agentRunId: r.id }}
-                className="text-xs text-primary hover:underline"
-              >
-                Open in audit log
+          <Section
+            title="Activity"
+            aside={
+              <Link to="/operator/audit" search={{ agentRunId: r.id }} className="text-text-secondary hover:text-text">
+                Audit log
               </Link>
-            </CardHeader>
-            <CardContent>
-              {audit.isPending ? (
-                <ListSkeleton rows={4} />
-              ) : audit.isError ? (
-                <ErrorState error={audit.error} onRetry={() => void audit.refetch()} />
-              ) : audit.data.items.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No events yet.</p>
-              ) : (
-                <AuditEventList events={audit.data.items} />
-              )}
-            </CardContent>
-          </Card>
+            }
+          >
+            {audit.isPending ? (
+              <ListSkeleton rows={4} />
+            ) : audit.isError ? (
+              <ErrorState error={audit.error} onRetry={() => void audit.refetch()} />
+            ) : events.length === 0 ? (
+              <p className="text-13 text-text-tertiary">No events yet.</p>
+            ) : (
+              <Steps defaultOpen>
+                <StepsTrigger>
+                  <span className="tabular-nums">
+                    {events.length} {events.length === 1 ? 'event' : 'events'}
+                  </span>
+                </StepsTrigger>
+                <StepsContent>
+                  <AuditEventList events={events} />
+                </StepsContent>
+              </Steps>
+            )}
+          </Section>
         </div>
       </div>
     </PageContainer>
   )
 }
 
-function RunStatusBadgeLite({ status, current }: { status: RunStatus; current: boolean }) {
+function Analysis({ run: r }: { run: AgentRunDto }) {
+  if (r.output) {
+    return (
+      <div className="space-y-4">
+        <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 text-sm">
+          <Row label="Risk">
+            <RiskBadge level={r.output.riskLevel} className="text-sm" />
+          </Row>
+          <Row label="Recommendation">
+            <span className="font-medium">{actionLabel(r.output.recommendedAction)}</span>
+          </Row>
+          <Row label="Needs approval">{r.output.requiresApproval ? 'Yes' : 'No'}</Row>
+        </dl>
+        <Reasoning defaultOpen>
+          <ReasoningTrigger>Reasoning</ReasoningTrigger>
+          <ReasoningContent>
+            <p
+              className="max-w-prose border-l-2 border-border pl-3 leading-relaxed whitespace-pre-wrap"
+              data-testid="analysis-reasoning"
+            >
+              {r.output.reasoningSummary}
+            </p>
+          </ReasoningContent>
+        </Reasoning>
+      </div>
+    )
+  }
+  if (r.error) {
+    return (
+      <div role="alert" className="space-y-1">
+        <p className="inline-flex items-center gap-2 text-sm font-medium">
+          <span aria-hidden className="size-2 rounded-full bg-danger-dot" />
+          Analysis failed
+        </p>
+        <p className="text-13 text-text-secondary">{r.error}</p>
+        <p className="text-13 text-text-tertiary">Nothing was executed. Failed analyses are never auto-approved.</p>
+      </div>
+    )
+  }
   return (
-    <span className={current ? '' : 'opacity-70'} title={humanize(status)}>
-      <RunStatusBadge status={status} className={current ? 'ring-2' : ''} testId="timeline-status" />
-    </span>
+    <div className="flex items-center gap-3 py-2" role="status" aria-live="polite">
+      <CircularLoader size="sm" />
+      <TextShimmer className="text-sm">Analyzing invoice…</TextShimmer>
+    </div>
   )
 }
 
-function Row({ label, value }: { label: string; value: React.ReactNode }) {
+function Row({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div className="flex items-start justify-between gap-4">
-      <span className="text-muted-foreground">{label}</span>
-      <span className="text-right font-medium">{value}</span>
-    </div>
+    <>
+      <dt className="text-text-secondary">{label}</dt>
+      <dd className="min-w-0 text-text">{children}</dd>
+    </>
+  )
+}
+
+function RunDetailSkeleton() {
+  return (
+    <PageContainer>
+      <div className="mb-8 space-y-3">
+        <Skeleton className="h-3 w-12" />
+        <Skeleton className="h-7 w-32" />
+        <Skeleton className="h-3 w-80 max-w-full" />
+      </div>
+      <div className="grid gap-10 lg:grid-cols-[minmax(0,2fr)_minmax(18rem,1fr)]">
+        <div className="space-y-3">
+          <Skeleton className="mb-5 h-3 w-20" />
+          {Array.from({ length: 5 }, (_, i) => (
+            <Skeleton key={i} className="h-3.5 w-full" />
+          ))}
+        </div>
+        <div className="space-y-3">
+          <Skeleton className="mb-5 h-3 w-20" />
+          {Array.from({ length: 4 }, (_, i) => (
+            <Skeleton key={i} className="h-3.5 w-full" />
+          ))}
+        </div>
+      </div>
+    </PageContainer>
   )
 }

@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Info, Loader2 } from 'lucide-react'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
+import { CircularLoader } from '@/components/prompt-kit/loader'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { api, ApiError, errorMessage } from '@/lib/api'
@@ -64,38 +64,33 @@ export function LoginForm({ onSuccess }: { onSuccess: (session: LoginResponse) =
       </FormField>
 
       {serverError && (
-        <div
-          role="alert"
-          data-testid="login-error"
-          className="rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive"
-        >
+        <p role="alert" data-testid="login-error" className="text-13 text-danger">
           {serverError}
-        </div>
+        </p>
       )}
 
-      <Button type="submit" className="w-full" disabled={isSubmitting} data-testid="login-submit">
-        {isSubmitting && <Loader2 className="animate-spin" />}
+      <Button type="submit" variant="primary" size="lg" className="w-full sm:h-10" disabled={isSubmitting} data-testid="login-submit">
+        {isSubmitting && <CircularLoader size="sm" className="text-current" />}
         Sign in
       </Button>
 
-      <div className="rounded-md bg-muted/60 p-3 text-xs text-muted-foreground" data-testid="demo-accounts">
-        <p className="mb-2 flex items-center gap-1.5 font-medium text-foreground">
-          <Info className="size-3.5" /> Demo accounts (synthetic test data)
-        </p>
-        <div className="flex flex-wrap gap-1.5">
+      <div className="border-t pt-5" data-testid="demo-accounts">
+        <p className="text-13 text-text-secondary">Demo accounts · synthetic data</p>
+        <div className="mt-2 grid grid-cols-2 gap-1.5">
           {DEMO_ACCOUNTS.map((a) => (
             <button
               key={a.username}
               type="button"
               onClick={() => fillDemo(a.username)}
-              className="rounded border bg-card px-2 py-1 font-mono text-[11px] transition-colors hover:border-primary hover:text-primary focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none"
+              className="pressable flex h-10 items-center justify-between rounded-md border px-3 text-left text-13 hover:bg-bg-muted"
             >
-              {a.username} <span className="text-muted-foreground">· {a.role}</span>
+              <span className="font-medium">{a.username}</span>
+              <span className="text-text-tertiary">{a.role}</span>
             </button>
           ))}
         </div>
-        <p className="mt-2">
-          Password: <code className="font-mono">{DEMO_PASSWORD}</code>
+        <p className="mt-2 text-13 text-text-tertiary">
+          Password <code className="font-mono text-text-secondary">{DEMO_PASSWORD}</code>
         </p>
       </div>
     </form>

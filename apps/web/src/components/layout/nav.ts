@@ -1,4 +1,4 @@
-import { ClipboardCheck, FileSearch, LayoutDashboard, type LucideIcon, MessagesSquare, PlayCircle, ScrollText } from 'lucide-react'
+import { Inbox, LayoutGrid, type LucideIcon, MessageSquare, Play, ScrollText, FolderOpen } from 'lucide-react'
 import type { Role } from '@/lib/types'
 
 export interface NavItem {
@@ -11,15 +11,15 @@ export interface NavItem {
 
 export const NAV: Record<Role, NavItem[]> = {
   OPERATOR: [
-    { to: '/operator', label: 'Dashboard', icon: LayoutDashboard, exact: true },
-    { to: '/operator/cases', label: 'Cases', icon: FileSearch },
-    { to: '/operator/runs', label: 'Runs', icon: PlayCircle },
-    { to: '/operator/audit', label: 'Audit', icon: ScrollText },
-    { to: '/messages', label: 'Messages', icon: MessagesSquare, badge: 'messages' },
+    { to: '/operator', label: 'Overview', icon: LayoutGrid, exact: true },
+    { to: '/operator/cases', label: 'Cases', icon: FolderOpen },
+    { to: '/operator/runs', label: 'Runs', icon: Play },
+    { to: '/operator/audit', label: 'Audit log', icon: ScrollText },
+    { to: '/messages', label: 'Messages', icon: MessageSquare, badge: 'messages' },
   ],
   REVIEWER: [
-    { to: '/reviewer', label: 'Inbox', icon: ClipboardCheck, badge: 'approvals' },
-    { to: '/messages', label: 'Messages', icon: MessagesSquare, badge: 'messages' },
+    { to: '/reviewer', label: 'Inbox', icon: Inbox, badge: 'approvals' },
+    { to: '/messages', label: 'Messages', icon: MessageSquare, badge: 'messages' },
   ],
 }
 

@@ -1,81 +1,70 @@
-import { useNavigate } from '@tanstack/react-router'
-import { FileSearch } from 'lucide-react'
 import { PageContainer } from '@/components/layout/app-shell'
 import { PageHeader } from '@/components/shared/page-header'
-import { EmptyState, ErrorState, ListSkeleton } from '@/components/shared/states'
-import { CaseStatusBadge } from '@/components/shared/status-badge'
-import { Card } from '@/components/ui/card'
+import { RowLink, rowLinkClass } from '@/components/shared/row-link'
+import { EmptyState, ErrorState, RowsSkeleton } from '@/components/shared/states'
+import { CaseStatusBadge } from '@/components/shared/status'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { useCases } from '@/features/cases/hooks'
 import { NewCaseDialog } from '@/features/cases/new-case-dialog'
-import { formatMoney, formatRelative } from '@/lib/utils'
+import { useDocumentTitle } from '@/lib/hooks'
+import { formatDateTime, formatMoney, formatRelative } from '@/lib/utils'
 
 export function CasesPage() {
+  useDocumentTitle('Cases')
   const cases = useCases()
-  const navigate = useNavigate()
   const items = [...(cases.data?.items ?? [])].sort((a, b) => b.createdAt.localeCompare(a.createdAt))
-  const open = (id: number) => void navigate({ to: '/operator/cases/$caseId', params: { caseId: String(id) } })
 
   return (
     <PageContainer>
       <PageHeader
         title="Cases"
-        description="Invoice investigations you have opened."
+        meta={cases.data ? <span className="tabular-nums">{cases.data.total} invoices under investigation</span> : null}
         actions={<NewCaseDialog />}
       />
       {cases.isPending ? (
-        <ListSkeleton rows={6} />
+        <RowsSkeleton rows={6} columns={['w-2/5', 'w-1/5', 'w-24', 'w-20', 'w-16']} />
       ) : cases.isError ? (
         <ErrorState error={cases.error} onRetry={() => void cases.refetch()} />
       ) : items.length === 0 ? (
-        <EmptyState
-          icon={FileSearch}
-          title="No investigations yet"
-          description="Create your first investigation to let the AI agent assess an invoice."
-          action={<NewCaseDialog />}
-        />
+        <EmptyState title="No cases yet" description="Create a case for an invoice you want the agent to assess." />
       ) : (
-        <Card className="py-1">
-          <Table data-testid="cases-table">
-            <TableHeader>
-              <TableRow className="hover:bg-transparent">
-                <TableHead>Title</TableHead>
-                <TableHead>Vendor</TableHead>
-                <TableHead className="hidden sm:table-cell">Invoice #</TableHead>
-                <TableHead className="text-right">Amount</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Created</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {items.map((c) => (
-                <TableRow
-                  key={c.id}
-                  tabIndex={0}
-                  role="link"
-                  aria-label={`Open case ${c.title}`}
-                  data-testid={`case-row-${c.id}`}
-                  className="cursor-pointer focus-visible:bg-muted focus-visible:outline-none"
-                  onClick={() => open(c.id)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') open(c.id)
-                  }}
+        <Table data-testid="cases-table">
+          <TableHeader>
+            <TableRow>
+              <TableHead>Title</TableHead>
+              <TableHead className="hidden md:table-cell">Vendor</TableHead>
+              <TableHead className="hidden lg:table-cell">Invoice</TableHead>
+              <TableHead className="text-right">Amount</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead className="hidden text-right sm:table-cell">Created</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {items.map((c) => (
+              <TableRow key={c.id} className={rowLinkClass} data-testid={`case-row-${c.id}`}>
+                <TableCell className="max-w-[14rem] truncate font-medium sm:max-w-[20rem]">
+                  <RowLink to="/operator/cases/$caseId" params={{ caseId: String(c.id) }} title={c.title}>
+                    {c.title}
+                  </RowLink>
+                </TableCell>
+                <TableCell className="hidden max-w-[12rem] truncate text-text-secondary md:table-cell" title={c.invoice.vendor}>
+                  {c.invoice.vendor}
+                </TableCell>
+                <TableCell className="hidden font-mono text-13 text-text-secondary lg:table-cell">{c.invoice.invoiceNumber}</TableCell>
+                <TableCell className="text-right tabular-nums">{formatMoney(c.invoice.amount, c.invoice.currency)}</TableCell>
+                <TableCell>
+                  <CaseStatusBadge status={c.status} />
+                </TableCell>
+                <TableCell
+                  className="hidden text-right text-13 text-text-secondary tabular-nums sm:table-cell"
+                  title={formatDateTime(c.createdAt)}
                 >
-                  <TableCell className="max-w-[18rem] truncate font-medium">{c.title}</TableCell>
-                  <TableCell className="max-w-[12rem] truncate">{c.invoice.vendor}</TableCell>
-                  <TableCell className="hidden font-mono text-xs sm:table-cell">{c.invoice.invoiceNumber}</TableCell>
-                  <TableCell className="text-right tabular-nums">
-                    {formatMoney(c.invoice.amount, c.invoice.currency)}
-                  </TableCell>
-                  <TableCell>
-                    <CaseStatusBadge status={c.status} />
-                  </TableCell>
-                  <TableCell className="text-right text-muted-foreground">{formatRelative(c.createdAt)}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </Card>
+                  {formatRelative(c.createdAt)}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       )}
     </PageContainer>
   )

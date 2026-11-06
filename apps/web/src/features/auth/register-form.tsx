@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Loader2, ShieldCheck, Workflow } from 'lucide-react'
 import { useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
+import { CircularLoader } from '@/components/prompt-kit/loader'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { api, ApiError, errorMessage } from '@/lib/api'
@@ -14,13 +14,11 @@ const ROLE_OPTIONS = [
   {
     value: 'OPERATOR',
     title: 'Operator',
-    icon: Workflow,
     text: 'Creates invoice investigations and launches AI analyses.',
   },
   {
     value: 'REVIEWER',
     title: 'Reviewer',
-    icon: ShieldCheck,
     text: 'Approves or rejects actions proposed by the AI agent.',
   },
 ] as const
@@ -68,6 +66,7 @@ export function RegisterForm({ onSuccess }: { onSuccess: (account: AccountCreate
           autoFocus
           data-testid="register-username"
           aria-invalid={!!errors.username}
+          aria-describedby={errors.username ? 'username-error' : 'username-hint'}
           {...register('username')}
         />
       </FormField>
@@ -78,6 +77,7 @@ export function RegisterForm({ onSuccess }: { onSuccess: (account: AccountCreate
           autoComplete="new-password"
           data-testid="register-password"
           aria-invalid={!!errors.password}
+          aria-describedby={errors.password ? 'password-error' : 'password-hint'}
           {...register('password')}
         />
       </FormField>
@@ -88,22 +88,22 @@ export function RegisterForm({ onSuccess }: { onSuccess: (account: AccountCreate
           autoComplete="new-password"
           data-testid="register-confirm"
           aria-invalid={!!errors.confirm}
+          aria-describedby={errors.confirm ? 'confirm-error' : undefined}
           {...register('confirm')}
         />
       </FormField>
 
-      <fieldset className="space-y-2">
-        <legend className="mb-1.5 text-sm font-medium">Role</legend>
-        <div className="grid gap-2">
+      <fieldset>
+        <legend className="mb-1.5 text-13 font-medium">Role</legend>
+        <div className="grid gap-1.5">
           {ROLE_OPTIONS.map((opt) => {
-            const Icon = opt.icon
             const checked = role === opt.value
             return (
               <label
                 key={opt.value}
                 className={cn(
-                  'flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition-colors has-[:focus-visible]:ring-[3px] has-[:focus-visible]:ring-ring/50',
-                  checked ? 'border-primary bg-accent/60' : 'hover:bg-muted/50',
+                  'flex cursor-pointer items-start gap-3 rounded-md border px-3 py-2.5 transition-colors duration-100 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-ring',
+                  checked ? 'border-accent-solid bg-accent-subtle' : 'hover:bg-bg-muted',
                 )}
               >
                 <input
@@ -113,10 +113,16 @@ export function RegisterForm({ onSuccess }: { onSuccess: (account: AccountCreate
                   data-testid={`register-role-${opt.value.toLowerCase()}`}
                   {...register('role')}
                 />
-                <Icon className={cn('mt-0.5 size-4', checked ? 'text-primary' : 'text-muted-foreground')} />
+                <span
+                  aria-hidden
+                  className={cn(
+                    'mt-0.5 size-4 shrink-0 rounded-full border',
+                    checked ? 'border-[5px] border-accent-solid' : 'border-border-strong',
+                  )}
+                />
                 <span>
                   <span className="block text-sm font-medium">{opt.title}</span>
-                  <span className="block text-xs text-muted-foreground">{opt.text}</span>
+                  <span className="block text-13 text-text-secondary">{opt.text}</span>
                 </span>
               </label>
             )
@@ -125,13 +131,13 @@ export function RegisterForm({ onSuccess }: { onSuccess: (account: AccountCreate
       </fieldset>
 
       {serverError && (
-        <div role="alert" className="rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+        <p role="alert" className="text-13 text-danger">
           {serverError}
-        </div>
+        </p>
       )}
 
-      <Button type="submit" className="w-full" disabled={isSubmitting} data-testid="register-submit">
-        {isSubmitting && <Loader2 className="animate-spin" />}
+      <Button type="submit" variant="primary" size="lg" className="w-full sm:h-10" disabled={isSubmitting} data-testid="register-submit">
+        {isSubmitting && <CircularLoader size="sm" className="text-current" />}
         Create account
       </Button>
     </form>

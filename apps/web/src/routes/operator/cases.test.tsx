@@ -50,6 +50,8 @@ describe('CasesPage list states', () => {
     await userEvent.click(screen.getByRole('button', { name: /retry/i }))
     expect(await screen.findByText('Unusual consulting invoice')).toBeInTheDocument()
     expect(screen.getByTestId('case-status')).toHaveTextContent('Flagged for review')
+    // rows navigate through a real link, not a clickable <tr>
+    expect(screen.getByRole('link', { name: 'Unusual consulting invoice' })).toHaveAttribute('href', '/operator/cases/3')
     await waitFor(() => expect(screen.queryByTestId('error-state')).not.toBeInTheDocument())
   })
 
@@ -57,6 +59,6 @@ describe('CasesPage list states', () => {
     signIn(makeUser({ id: 1, username: 'alice' }))
     mockFetch([{ path: '/api/cases', handler: () => ({ body: { items: [], total: 0, limit: 200, offset: 0 } }) }])
     renderWithProviders(<CasesPage />)
-    expect(await screen.findByTestId('empty-state')).toHaveTextContent('No investigations yet')
+    expect(await screen.findByTestId('empty-state')).toHaveTextContent('No cases yet')
   })
 })

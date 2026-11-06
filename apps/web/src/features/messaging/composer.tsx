@@ -1,6 +1,6 @@
-import { SendHorizontal } from 'lucide-react'
-import { type KeyboardEvent, useState } from 'react'
-import { Button } from '@/components/ui/button'
+import { ArrowUp } from 'lucide-react'
+import { useState } from 'react'
+import { PromptInput, PromptInputActions, PromptInputTextarea } from '@/components/prompt-kit/prompt-input'
 import { cn } from '@/lib/utils'
 import { MAX_MESSAGE_LENGTH } from './types'
 
@@ -12,6 +12,7 @@ interface Props {
   placeholder?: string
 }
 
+/** Message composer built on prompt-kit's PromptInput: Enter sends, Shift+Enter adds a line. */
 export function Composer({ onSend, onTyping, onStopTyping, disabled, placeholder = 'Write a message…' }: Props) {
   const [text, setText] = useState('')
   const trimmed = text.trim()
@@ -25,69 +26,56 @@ export function Composer({ onSend, onTyping, onStopTyping, disabled, placeholder
     setText('')
   }
 
-  const onKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
-      e.preventDefault()
-      submit()
-    }
-  }
-
   return (
     <form
-      className="border-t bg-card px-3 py-3 sm:px-5"
+      className="shrink-0 bg-bg px-3 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-6 sm:pb-4"
       onSubmit={(e) => {
         e.preventDefault()
         submit()
       }}
     >
-      <div className="mx-auto flex max-w-3xl items-end gap-2">
-        <div className="relative flex-1">
-          <textarea
-            value={text}
-            onChange={(e) => {
-              setText(e.target.value)
-              if (e.target.value.trim()) onTyping?.()
-              else onStopTyping?.()
-            }}
-            onKeyDown={onKeyDown}
-            onBlur={onStopTyping}
-            rows={1}
-            placeholder={placeholder}
-            aria-label="Message"
-            aria-invalid={tooLong}
-            data-testid="message-input"
-            className={cn(
-              'field-sizing-content max-h-40 min-h-10 w-full resize-none rounded-xl border border-input bg-background px-3.5 py-2.5 text-sm outline-none placeholder:text-muted-foreground',
-              'focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50',
-              tooLong && 'border-destructive',
-            )}
-          />
+      <PromptInput
+        value={text}
+        onValueChange={(v) => {
+          setText(v)
+          if (v.trim()) onTyping?.()
+          else onStopTyping?.()
+        }}
+        onSubmit={submit}
+        invalid={tooLong}
+        className="mx-auto flex max-w-3xl items-end gap-1 pr-1.5"
+      >
+        <PromptInputTextarea
+          placeholder={placeholder}
+          aria-label="Message"
+          aria-invalid={tooLong}
+          aria-describedby={text.length > MAX_MESSAGE_LENGTH - 500 ? 'char-counter' : undefined}
+          onBlur={onStopTyping}
+          enterKeyHint="send"
+          data-testid="message-input"
+        />
+        <PromptInputActions className="shrink-0 py-1.5">
           {text.length > MAX_MESSAGE_LENGTH - 500 && (
             <span
-              className={cn(
-                'absolute right-2 bottom-1 text-[10px]',
-                tooLong ? 'text-destructive' : 'text-muted-foreground',
-              )}
+              id="char-counter"
+              className={cn('px-1 text-xs tabular-nums', tooLong ? 'text-danger' : 'text-text-tertiary')}
               data-testid="char-counter"
             >
               {text.length}/{MAX_MESSAGE_LENGTH}
             </span>
           )}
-        </div>
-        <Button
-          type="submit"
-          size="icon"
-          className="size-10 rounded-xl"
-          disabled={!canSend}
-          aria-label="Send message"
-          data-testid="send-button"
-        >
-          <SendHorizontal />
-        </Button>
-      </div>
-      <p className="mx-auto mt-1 hidden max-w-3xl text-[10px] text-muted-foreground sm:block">
-        Enter to send · Shift+Enter for a new line
-      </p>
+          <button
+            type="submit"
+            disabled={!canSend}
+            aria-label="Send message"
+            data-testid="send-button"
+            onClick={(e) => e.stopPropagation()}
+            className="pressable relative inline-flex size-8 items-center after:absolute after:-inset-1.5 after:content-[''] after:rounded-xl justify-center rounded-lg bg-accent-solid text-accent-contrast hover:bg-accent-solid-hover disabled:bg-bg-muted disabled:text-text-tertiary"
+          >
+            <ArrowUp className="size-4" strokeWidth={2} />
+          </button>
+        </PromptInputActions>
+      </PromptInput>
     </form>
   )
 }

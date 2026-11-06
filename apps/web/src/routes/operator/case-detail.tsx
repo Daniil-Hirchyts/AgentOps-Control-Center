@@ -1,33 +1,39 @@
-import { Link } from '@tanstack/react-router'
-import { ArrowLeft, PlayCircle } from 'lucide-react'
+import { BackLink, MetaDot, PageHeader, Section } from '@/components/shared/page-header'
 import { PageContainer } from '@/components/layout/app-shell'
 import { InvoiceDetails } from '@/components/shared/invoice-details'
-import { PageHeader } from '@/components/shared/page-header'
-import { EmptyState, ErrorState, ListSkeleton } from '@/components/shared/states'
-import { CaseStatusBadge } from '@/components/shared/status-badge'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { EmptyState, ErrorState, RowsSkeleton } from '@/components/shared/states'
+import { CaseStatusBadge } from '@/components/shared/status'
 import { Skeleton } from '@/components/ui/skeleton'
 import { isRunActive, useRuns } from '@/features/agents/hooks'
 import { RunAnalysisDialog } from '@/features/agents/run-analysis-dialog'
 import { RunsTable } from '@/features/agents/runs-table'
 import { useCase } from '@/features/cases/hooks'
 import { ApiError } from '@/lib/api'
-import { formatDateTime } from '@/lib/utils'
+import { useDocumentTitle } from '@/lib/hooks'
+import { formatDate } from '@/lib/utils'
 
 export function CaseDetailPage({ caseId }: { caseId: number }) {
   const caseQ = useCase(caseId)
   const runs = useRuns({ caseId })
-  const back = (
-    <Link to="/operator/cases" className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
-      <ArrowLeft className="size-3" /> Cases
-    </Link>
-  )
+  useDocumentTitle(caseQ.data?.title ?? 'Case')
+  const back = <BackLink to="/operator/cases">Cases</BackLink>
 
   if (caseQ.isPending) {
     return (
       <PageContainer>
-        <Skeleton className="mb-6 h-8 w-64" />
-        <Skeleton className="h-64 w-full" />
+        <div className="mb-8 space-y-3">
+          <Skeleton className="h-3 w-16" />
+          <Skeleton className="h-7 w-80 max-w-full" />
+          <Skeleton className="h-3 w-56" />
+        </div>
+        <div className="grid gap-10 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
+          <div className="space-y-3">
+            {Array.from({ length: 6 }, (_, i) => (
+              <Skeleton key={i} className="h-3.5 w-full" />
+            ))}
+          </div>
+          <RowsSkeleton rows={3} />
+        </div>
       </PageContainer>
     )
   }
@@ -36,7 +42,6 @@ export function CaseDetailPage({ caseId }: { caseId: number }) {
       <PageContainer>
         {back}
         <ErrorState
-          className="mt-4"
           error={caseQ.error}
           title={caseQ.error instanceof ApiError && caseQ.error.isNotFound ? 'Case not found' : 'Could not load case'}
           onRetry={() => void caseQ.refetch()}
@@ -46,61 +51,52 @@ export function CaseDetailPage({ caseId }: { caseId: number }) {
   }
 
   const c = caseQ.data
-  const hasActiveRun = runs.data?.items.some((r) => isRunActive(r.status) || r.status === 'AWAITING_APPROVAL') ?? false
+  const activeRun = runs.data?.items.find((r) => isRunActive(r.status) || r.status === 'AWAITING_APPROVAL')
 
   return (
     <PageContainer>
       <PageHeader
         back={back}
         title={c.title}
-        description={
-          <span className="flex flex-wrap items-center gap-2">
+        meta={
+          <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
             <CaseStatusBadge status={c.status} />
-            <span>Case #{c.id}</span>·<span>Opened {formatDateTime(c.createdAt)}</span>
+            <MetaDot />
+            <span className="tabular-nums">Case #{c.id}</span>
+            <MetaDot />
+            <span className="tabular-nums">Opened {formatDate(c.createdAt)}</span>
           </span>
         }
         actions={<RunAnalysisDialog caseId={c.id} />}
       />
-      {hasActiveRun && (
-        <p className="-mt-3 mb-4 text-xs text-muted-foreground">
-          A run for this case is still in progress — you can still start another analysis.
-        </p>
-      )}
-      <div className="grid gap-6 lg:grid-cols-5">
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <div>
-              <CardTitle>Invoice</CardTitle>
-              <CardDescription>Data submitted to the AI agent</CardDescription>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <InvoiceDetails invoice={c.invoice} />
-          </CardContent>
-        </Card>
-        <Card className="lg:col-span-3">
-          <CardHeader>
-            <div>
-              <CardTitle>Run history</CardTitle>
-              <CardDescription>Every AI analysis performed on this case</CardDescription>
-            </div>
-          </CardHeader>
-          <CardContent className="px-2 sm:px-3">
-            {runs.isPending ? (
-              <ListSkeleton rows={3} />
-            ) : runs.isError ? (
-              <ErrorState error={runs.error} onRetry={() => void runs.refetch()} />
-            ) : runs.data.items.length === 0 ? (
-              <EmptyState
-                icon={PlayCircle}
-                title="No analysis yet"
-                description="Run the AI analysis and pick a reviewer to approve its recommendation."
-              />
-            ) : (
-              <RunsTable runs={runs.data.items} showCase={false} />
-            )}
-          </CardContent>
-        </Card>
+      <div className="grid gap-10 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
+        <Section title="Invoice">
+          <InvoiceDetails invoice={c.invoice} />
+        </Section>
+        <Section
+          title="Analyses"
+          aside={
+            activeRun ? (
+              <span className="text-text-secondary">One run is still open</span>
+            ) : runs.data ? (
+              <span className="text-text-tertiary tabular-nums">{runs.data.items.length}</span>
+            ) : null
+          }
+        >
+          {runs.isPending ? (
+            <RowsSkeleton rows={3} />
+          ) : runs.isError ? (
+            <ErrorState error={runs.error} onRetry={() => void runs.refetch()} />
+          ) : runs.data.items.length === 0 ? (
+            <EmptyState
+              className="py-2 sm:items-start sm:text-left"
+              title="Not analyzed yet"
+              description="Run an analysis and choose the reviewer who approves the agent’s recommendation."
+            />
+          ) : (
+            <RunsTable runs={runs.data.items} showCase={false} />
+          )}
+        </Section>
       </div>
     </PageContainer>
   )

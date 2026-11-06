@@ -22,11 +22,13 @@ export function FormField({
       <Label htmlFor={id}>{label}</Label>
       {children}
       {error ? (
-        <p id={`${id}-error`} role="alert" className="text-xs font-medium text-destructive">
+        <p id={`${id}-error`} role="alert" className="text-13 text-danger">
           {error}
         </p>
       ) : hint ? (
-        <p className="text-xs text-muted-foreground">{hint}</p>
+        <p id={`${id}-hint`} className="text-13 text-text-tertiary">
+          {hint}
+        </p>
       ) : null}
     </div>
   )
