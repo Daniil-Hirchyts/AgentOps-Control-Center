@@ -1,4 +1,13 @@
-# Default (dev): only PostgreSQL. Full stack: `docker compose --profile app up --build`.
+# AgentOps Control Center — full stack.
+#
+#   cp .env.example .env && docker compose up --build
+#       postgres + backend + demo seed + web (Caddy) on http://localhost:8080
+#   docker compose up -d postgres
+#       database only (backend and web run on the host for development)
+#   docker compose --profile test run --rm backend-test
+#       Rust test suite in a container
+#   docker compose --profile test run --rm e2e
+#       Playwright E2E (two browser contexts) against the running stack
 services:
   postgres:
     image: postgres:17-alpine
@@ -7,7 +16,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-agentops}
       POSTGRES_DB: ${POSTGRES_DB:-agentops}
     ports:
-      - "127.0.0.1:5432:5432"
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -16,12 +25,8 @@ services:
       timeout: 3s
       retries: 20
 
-  # ---------------------------------------------------------------------------
-  # Full stack (opt-in): docker compose --profile app up --build
-  # Open http://localhost:8080 (SPA, REST under /api, WebSocket under /ws).
-  # ---------------------------------------------------------------------------
+  # Rust API + WebSocket. Not published on the host: all traffic goes through `web`.
   backend:
-    profiles: ["app"]
     build:
       context: .
       dockerfile: infra/docker/backend.Dockerfile
@@ -30,7 +35,7 @@ services:
       - path: .env
         required: false
     environment:
-      # Overrides for the container network (values from .env target the host).
+      # Overrides for the container network (values in .env target the host).
       DATABASE_URL: postgres://${POSTGRES_USER:-agentops}:${POSTGRES_PASSWORD:-agentops}@postgres:5432/${POSTGRES_DB:-agentops}
       BIND_ADDR: 0.0.0.0:8080
       # LM Studio runs on the host. See docs/development.md before using LLM_MODE=real here.
@@ -49,10 +54,25 @@ services:
       start_period: 20s
       retries: 5
     restart: unless-stopped
-    # Not published on the host: all traffic goes through the web service.
 
+  # One-shot and idempotent: creates the synthetic demo accounts and invoices.
+  # Skip it with SEED_DEMO_DATA=false.
+  seed:
+    image: agentops-backend:local
+    entrypoint: ["/bin/sh", "-c", "[ \"$$SEED_DEMO_DATA\" = false ] || exec /usr/local/bin/seed"]
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-agentops}:${POSTGRES_PASSWORD:-agentops}@postgres:5432/${POSTGRES_DB:-agentops}
+      SEED_DEMO_DATA: ${SEED_DEMO_DATA:-true}
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: "no"
+
+  # Caddy: serves the React build and reverse-proxies /api and /ws (single origin).
   web:
-    profiles: ["app"]
     build:
       context: .
       dockerfile: infra/docker/web.Dockerfile
@@ -73,7 +93,49 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  # ---------------------------------------------------------------------------
+  # Tests (profile "test")
+  # ---------------------------------------------------------------------------
+  backend-test:
+    profiles: ["test"]
+    image: rust:1-bookworm
+    working_dir: /src/backend
+    command: ["cargo", "test", "--locked"]
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-agentops}:${POSTGRES_PASSWORD:-agentops}@postgres:5432/${POSTGRES_DB:-agentops}
+      JWT_SECRET: docker-test-only-jwt-secret-0123456789abcdef
+      LLM_MODE: mock
+      CARGO_TARGET_DIR: /target
+    volumes:
+      - ./backend:/src/backend:ro
+      - cargo_registry:/usr/local/cargo/registry
+      - backend_test_target:/target
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  e2e:
+    profiles: ["test"]
+    build:
+      context: .
+      dockerfile: infra/docker/e2e.Dockerfile
+    image: agentops-e2e:local
+    environment:
+      BASE_URL: http://web
+      CI: "true"
+    volumes:
+      - ./tests/e2e/playwright-report:/e2e/playwright-report
+      - ./tests/e2e/test-results:/e2e/test-results
+    ipc: host
+    depends_on:
+      web:
+        condition: service_started
+      seed:
+        condition: service_completed_successfully
+
 volumes:
   pgdata:
   caddy_data:
   caddy_config:
+  cargo_registry:
+  backend_test_target:
