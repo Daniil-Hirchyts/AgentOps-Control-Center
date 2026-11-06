@@ -1,0 +1,105 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 620" width="960" height="620" font-family="Helvetica, Arial, sans-serif" font-size="13">
+  <title>AgentOps Control Center: architecture</title>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#475569"/>
+    </marker>
+    <style>
+      .box { fill: #ffffff; stroke: #334155; stroke-width: 1.4; }
+      .group { fill: #f1f5f9; stroke: #94a3b8; stroke-width: 1; stroke-dasharray: 5 4; }
+      .core { fill: #eef2ff; stroke: #4f46e5; stroke-width: 1.4; }
+      .db { fill: #ecfdf5; stroke: #059669; stroke-width: 1.4; }
+      .llm { fill: #fff7ed; stroke: #ea580c; stroke-width: 1.4; }
+      .title { font-weight: bold; font-size: 14px; fill: #0f172a; }
+      .label { fill: #334155; }
+      .small { font-size: 11px; fill: #64748b; }
+      .edge { stroke: #475569; stroke-width: 1.4; fill: none; marker-end: url(#arrow); }
+      .edge2 { stroke: #475569; stroke-width: 1.4; fill: none; marker-end: url(#arrow); marker-start: url(#arrow); }
+      .dashed { stroke-dasharray: 5 4; }
+    </style>
+  </defs>
+
+  <rect x="0" y="0" width="960" height="620" fill="#ffffff"/>
+  <text x="24" y="34" class="title" font-size="18">AgentOps Control Center: client-server architecture</text>
+  <text x="24" y="54" class="small">No peer-to-peer traffic: every message and event goes through the central backend and PostgreSQL.</text>
+
+  <!-- Clients -->
+  <rect x="24" y="80" width="912" height="96" rx="10" class="group"/>
+  <text x="40" y="100" class="small">CLIENTS (same React SPA, responsive)</text>
+  <rect x="150" y="108" width="240" height="56" rx="8" class="box"/>
+  <text x="270" y="131" text-anchor="middle" class="title">Laptop browser</text>
+  <text x="270" y="150" text-anchor="middle" class="small">alice, OPERATOR</text>
+  <rect x="570" y="108" width="240" height="56" rx="8" class="box"/>
+  <text x="690" y="131" text-anchor="middle" class="title">Phone browser</text>
+  <text x="690" y="150" text-anchor="middle" class="small">bob, REVIEWER (same Wi-Fi)</text>
+
+  <!-- Edge proxy -->
+  <rect x="150" y="214" width="660" height="50" rx="8" class="box"/>
+  <text x="480" y="236" text-anchor="middle" class="title">Same origin: Vite dev server :5173  or  Caddy :80/:443</text>
+  <text x="480" y="254" text-anchor="middle" class="small">serves the SPA, proxies /api/* and /ws/* to the backend</text>
+
+  <path d="M270,164 L270,212" class="edge2"/>
+  <path d="M690,164 L690,212" class="edge2"/>
+  <text x="280" y="193" class="small">HTTP + WebSocket</text>
+  <text x="700" y="193" class="small">HTTP + WebSocket (LAN)</text>
+
+  <!-- Backend -->
+  <rect x="24" y="296" width="912" height="190" rx="10" class="group"/>
+  <text x="40" y="316" class="small">RUST BACKEND :8080 (Axum + Tokio), binary "agentops"</text>
+
+  <rect x="44" y="328" width="200" height="66" rx="8" class="core"/>
+  <text x="144" y="352" text-anchor="middle" class="title">REST API /api/*</text>
+  <text x="144" y="370" text-anchor="middle" class="small">accounts, users, history,</text>
+  <text x="144" y="384" text-anchor="middle" class="small">cases, runs, approvals, audit</text>
+
+  <rect x="264" y="328" width="200" height="66" rx="8" class="core"/>
+  <text x="364" y="352" text-anchor="middle" class="title">WebSocket hub</text>
+  <text x="364" y="370" text-anchor="middle" class="small">/ws/messages?ticket=…</text>
+  <text x="364" y="384" text-anchor="middle" class="small">messages, presence, typing</text>
+
+  <rect x="484" y="328" width="200" height="66" rx="8" class="core"/>
+  <text x="584" y="352" text-anchor="middle" class="title">Agent worker</text>
+  <text x="584" y="370" text-anchor="middle" class="small">state machine, allowlist,</text>
+  <text x="584" y="384" text-anchor="middle" class="small">exactly-once executor</text>
+
+  <rect x="704" y="328" width="212" height="66" rx="8" class="core"/>
+  <text x="810" y="352" text-anchor="middle" class="title">LLM client</text>
+  <text x="810" y="370" text-anchor="middle" class="small">LLM_MODE = real | mock</text>
+  <text x="810" y="384" text-anchor="middle" class="small">strict JSON validation</text>
+
+  <rect x="44" y="410" width="420" height="58" rx="8" class="box"/>
+  <text x="254" y="428" text-anchor="middle" class="title">Auth</text>
+  <text x="254" y="445" text-anchor="middle" class="small">Argon2id · JWT access token (memory) · HttpOnly refresh cookie</text>
+  <text x="254" y="459" text-anchor="middle" class="small">WS ticket (aud "ws", 30 s) · Origin check · RBAC + per-record checks</text>
+
+  <rect x="484" y="410" width="432" height="58" rx="8" class="box"/>
+  <text x="700" y="436" text-anchor="middle" class="title">OpenAPI 3.1 + Swagger UI</text>
+  <text x="700" y="452" text-anchor="middle" class="small">/api/openapi.json · /api/docs (Utoipa)</text>
+
+  <path d="M260,264 L144,326" class="edge"/>
+  <path d="M700,264 L364,326" class="edge"/>
+  <text x="150" y="292" class="small">/api/*</text>
+  <text x="545" y="292" class="small">/ws/*</text>
+
+  <!-- internal flows -->
+  <path d="M144,394 L144,402 L578,402 L578,396" class="edge"/>
+  <path d="M484,361 L466,361" class="edge"/>
+  <path d="M684,361 L702,361" class="edge"/>
+  <text x="904" y="316" text-anchor="end" class="small">REST enqueues runs → worker → LLM; worker pushes events through the hub</text>
+
+  <!-- Storage and LLM -->
+  <rect x="150" y="530" width="300" height="66" rx="8" class="db"/>
+  <text x="300" y="556" text-anchor="middle" class="title">PostgreSQL 17</text>
+  <text x="300" y="575" text-anchor="middle" class="small">users · messages · cases · agent_runs ·</text>
+  <text x="300" y="589" text-anchor="middle" class="small">approvals · action_executions · audit_events</text>
+
+  <rect x="620" y="530" width="296" height="66" rx="8" class="llm"/>
+  <text x="768" y="556" text-anchor="middle" class="title">LM Studio (host)</text>
+  <text x="768" y="575" text-anchor="middle" class="small">OpenAI-compatible, localhost:1234/v1</text>
+  <text x="768" y="589" text-anchor="middle" class="small">never exposed publicly</text>
+
+  <path d="M300,486 L300,528" class="edge2"/>
+  <text x="310" y="512" class="small">SQLx pool (source of truth)</text>
+  <path d="M810,486 L810,528" class="edge"/>
+  <text x="820" y="512" class="small">reqwest, HTTP</text>
+</svg>
