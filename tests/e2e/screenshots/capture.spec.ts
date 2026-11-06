@@ -50,6 +50,9 @@ test('capture report screenshots (alice desktop operator, bob mobile reviewer)',
   await expect(desk.getByTestId('message-bubble').last()).toContainText('tout de suite');
   await send(desk, 'Merci, aucun bon de commande ne correspond.');
   await expect(phone.getByTestId('message-bubble').last()).toContainText('bon de commande');
+  // Let the message-enter transition (200ms) and presence settle before capturing.
+  await expect(desk.getByTestId(`contact-bob`)).toContainText('Online');
+  await desk.waitForTimeout(400);
   await desk.screenshot({ path: `${OUT}/desktop-messaging.png` });
   await phone.screenshot({ path: `${OUT}/mobile-messaging.png` });
 
