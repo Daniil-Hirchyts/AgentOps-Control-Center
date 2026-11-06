@@ -6,7 +6,7 @@ import { useRealtimeStore } from '@/stores/realtime'
 import { qk } from './query-keys'
 import type { RunStatus, UserDto } from './types'
 import type { ServerEvent } from './ws-events'
-import { humanize } from './utils'
+import { actionLabel, approvalStatusLabel, riskLabel, runStatusLabel } from './labels'
 
 export interface HandlerDeps {
   qc: QueryClient
@@ -67,6 +67,11 @@ export function handleServerEvent(event: ServerEvent, { qc, me, navigate }: Hand
       qc.setQueryData<UserDto[]>(qk.users, (old) =>
         old?.map((u) => (u.id === event.userId ? { ...u, online: event.online } : u)),
       )
+      // A users request already in flight was answered from a snapshot taken
+      // before this event; it would overwrite the fresher status. Cancel and refetch.
+      if (qc.isFetching({ queryKey: qk.users }) > 0) {
+        void qc.invalidateQueries({ queryKey: qk.users })
+      }
       if (!event.online) clearTyping(event.userId)
       return
     }
@@ -94,7 +99,7 @@ export function handleServerEvent(event: ServerEvent, { qc, me, navigate }: Hand
       void qc.invalidateQueries({ queryKey: qk.audit })
       if (me.role === 'OPERATOR' && NOTABLE_RUN_STATUSES.has(event.status)) {
         const fn = event.status === 'FAILED' ? toast.error : event.status === 'COMPLETED' ? toast.success : toast.info
-        fn(`Run #${event.runId}: ${humanize(event.status)}`, {
+        fn(`Run #${event.runId} · ${runStatusLabel(event.status)}`, {
           id: `run-${event.runId}-${event.status}`,
           action: { label: 'View', onClick: () => navigate(`/operator/runs/${event.runId}`) },
         })
@@ -111,14 +116,15 @@ export function handleServerEvent(event: ServerEvent, { qc, me, navigate }: Hand
         ? `Run #${event.runId} is awaiting approval`
         : `New approval request: ${event.caseTitle}`
       if (!iAmRequester) rt.markApprovalFresh(event.approvalId)
+      const description = `${riskLabel(event.riskLevel)} · ${actionLabel(event.proposedAction)}`
       rt.pushNotification({
         title,
-        description: `${humanize(event.riskLevel)} risk · ${humanize(event.proposedAction)}`,
+        description,
         href,
       })
       toast.warning(title, {
         id: `approval-req-${event.approvalId}`,
-        description: `${humanize(event.riskLevel)} risk · ${humanize(event.proposedAction)}`,
+        description,
         action: { label: 'Open', onClick: () => navigate(href) },
       })
       return
@@ -130,7 +136,7 @@ export function handleServerEvent(event: ServerEvent, { qc, me, navigate }: Hand
       void qc.invalidateQueries({ queryKey: qk.audit })
       if (event.decidedBy === me.id) return // own decision — the mutation already gave feedback
       const href = me.role === 'REVIEWER' ? `/reviewer/approvals/${event.approvalId}` : `/operator/runs/${event.runId}`
-      const title = `Approval #${event.approvalId} ${event.status.toLowerCase()}`
+      const title = `Approval #${event.approvalId} ${approvalStatusLabel(event.status).toLowerCase()}`
       rt.pushNotification({
         title,
         description: event.decidedBy ? `by ${usernameOf(qc, event.decidedBy)}` : undefined,
