@@ -1,0 +1,79 @@
+# Default (dev): only PostgreSQL. Full stack: `docker compose --profile app up --build`.
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-agentops}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-agentops}
+      POSTGRES_DB: ${POSTGRES_DB:-agentops}
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-agentops}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  # ---------------------------------------------------------------------------
+  # Full stack (opt-in): docker compose --profile app up --build
+  # Open http://localhost:8080 (SPA, REST under /api, WebSocket under /ws).
+  # ---------------------------------------------------------------------------
+  backend:
+    profiles: ["app"]
+    build:
+      context: .
+      dockerfile: infra/docker/backend.Dockerfile
+    image: agentops-backend:local
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      # Overrides for the container network (values from .env target the host).
+      DATABASE_URL: postgres://${POSTGRES_USER:-agentops}:${POSTGRES_PASSWORD:-agentops}@postgres:5432/${POSTGRES_DB:-agentops}
+      BIND_ADDR: 0.0.0.0:8080
+      # LM Studio runs on the host. See docs/development.md before using LLM_MODE=real here.
+      LLM_BASE_URL: ${DOCKER_LLM_BASE_URL:-http://host.docker.internal:1234/v1}
+      ALLOWED_ORIGINS: ${DOCKER_ALLOWED_ORIGINS:-http://localhost:8080,http://127.0.0.1:8080}
+    extra_hosts:
+      # Needed on Linux; Docker Desktop already provides host.docker.internal.
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8080/api/health"]
+      interval: 10s
+      timeout: 3s
+      start_period: 20s
+      retries: 5
+    restart: unless-stopped
+    # Not published on the host: all traffic goes through the web service.
+
+  web:
+    profiles: ["app"]
+    build:
+      context: .
+      dockerfile: infra/docker/web.Dockerfile
+    image: agentops-web:local
+    environment:
+      # ":80" = plain HTTP. Set to a public domain for automatic HTTPS
+      # (then publish 80/443 and set COOKIE_SECURE=true for the backend).
+      SITE_ADDRESS: ${SITE_ADDRESS:-:80}
+      BACKEND_UPSTREAM: backend:8080
+    ports:
+      - "${WEB_PORT:-8080}:80"
+      - "${WEB_HTTPS_PORT:-8443}:443"
+    volumes:
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  caddy_data:
+  caddy_config:

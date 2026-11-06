@@ -1,0 +1,17 @@
+# Keep the build context small and free of secrets.
+.git
+.github
+**/.env
+**/.env.*
+!.env.example
+**/target
+**/node_modules
+**/dist
+**/.vite
+**/coverage
+**/playwright-report
+**/test-results
+docs
+tests
+**/.DS_Store
+*.log
