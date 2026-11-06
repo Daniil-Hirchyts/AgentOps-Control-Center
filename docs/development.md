@@ -246,18 +246,30 @@ Still to take by hand during the physical demo:
 
 ```bash
 cp .env.example .env            # set JWT_SECRET
-docker compose --profile app up --build -d
-docker compose exec backend seed
+docker compose up --build       # add -d to detach
 open http://localhost:8080
 ```
 
-- `postgres` (default profile) is unchanged and still the only service started by plain `docker compose up`.
+- `docker compose up` starts the whole application: `postgres`, `backend` (migrations at startup), `seed` (one-shot,
+  idempotent synthetic data; `SEED_DEMO_DATA=false` skips it) and `web`.
+- For host development, start only the database with `docker compose up -d postgres`.
 - `backend` is built from `infra/docker/backend.Dockerfile`, reads `.env`, and gets `DATABASE_URL` pointing at the
   `postgres` service. It is not published on the host.
 - `web` is Caddy (`infra/docker/web.Dockerfile` + `infra/caddy/Caddyfile`): serves the SPA and proxies `/api/*` and
-  `/ws/*` to the backend, so the browser sees a single origin. Port `WEB_PORT` (default 8080) → container 80.
+  `/ws/*` to the backend, so the browser sees a single origin. Port `WEB_PORT` (default 8080) → container 80. Phones
+  on the same Wi-Fi use `http://<laptop-IP>:8080`; Caddy keeps the `Host` header so the WebSocket Origin check passes.
 - Setting `SITE_ADDRESS=agentops.example.org` makes Caddy obtain a certificate automatically. That requires a public
   DNS name, ports 80/443 published (`WEB_PORT=80 WEB_HTTPS_PORT=443`), and `COOKIE_SECURE=true`.
+- Ports can be moved when they clash with a host setup: `POSTGRES_PORT`, `WEB_PORT`, `WEB_HTTPS_PORT`.
+
+### Tests in containers (profile `test`)
+
+```bash
+docker compose --profile test run --rm backend-test   # cargo test, uses the compose PostgreSQL
+docker compose --profile test run --rm e2e            # Playwright (Chromium) against http://web
+```
+
+The E2E report is written to `tests/e2e/playwright-report/`.
 
 ### LM Studio from inside Docker
 
@@ -288,4 +300,4 @@ LM Studio then stays on `127.0.0.1` and is never exposed. Use the Docker full st
 | Phone cannot open the page | different Wi-Fi / client isolation, macOS firewall blocked `node`, Vite started without `--host` |
 | Runs always `FAILED` with real LLM | LM Studio server not started, no model loaded, wrong `LLM_MODEL`, or the model is too weak for JSON output |
 | Port 5432 already in use | another local PostgreSQL; stop it or change the published port |
-| Port 8080 in use with `--profile app` | a host backend is running; stop it or set `WEB_PORT` |
+| Port 8080 in use by Docker `web` | a host backend is running; stop it or set `WEB_PORT` |
