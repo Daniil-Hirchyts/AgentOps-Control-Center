@@ -1,0 +1,44 @@
+[package]
+name = "agentops"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+argon2 = "0.6.0"
+async-trait = "0.1.92"
+axum = { version = "0.8.9", features = ["ws", "macros"] }
+chrono = { version = "0.4.45", features = ["serde"] }
+dotenvy = "0.15.7"
+futures-util = "0.3.34"
+hex = "0.4.3"
+jsonwebtoken = { version = "11.1.0", features = ["rust_crypto"] }
+rand = "0.10.3"
+reqwest = { version = "0.13.5", default-features = false, features = ["rustls", "json"] }
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.154"
+sha2 = "0.11.1"
+sqlx = { version = "0.8.6", default-features = false, features = ["postgres", "runtime-tokio", "tls-rustls", "chrono", "json", "migrate", "macros"] }
+thiserror = "2.0.21"
+tokio = { version = "1.54.1", features = ["full"] }
+tower = { version = "0.5.3", features = ["util", "limit"] }
+tower-http = { version = "0.7.1", features = ["trace", "cors", "limit"] }
+tracing = "0.1.44"
+tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
+utoipa = { version = "6.0.0", features = ["axum_extras", "chrono"] }
+utoipa-swagger-ui = { version = "10.0.2", features = ["axum", "vendored"] }
+
+[dev-dependencies]
+http-body-util = "0.1.5"
+tokio-tungstenite = "0.30.0"
+
+[lib]
+name = "agentops"
+path = "src/lib.rs"
+
+[[bin]]
+name = "agentops"
+path = "src/main.rs"
+
+# Argon2 is painfully slow without optimisations; keep debug builds/tests usable.
+[profile.dev.package.argon2]
+opt-level = 3
