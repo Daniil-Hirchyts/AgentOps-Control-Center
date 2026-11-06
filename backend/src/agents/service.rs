@@ -14,7 +14,8 @@ use crate::websocket::events::{ApprovalRequestedEvent, ServerEvent};
 
 pub const MAX_LLM_ATTEMPTS: i32 = 2;
 
-/// Insert a PENDING run (+ `run_created` audit), publish its status and spawn the worker.
+/// Insert a PENDING run (+ `run_created` audit) and publish its status.
+/// The caller starts processing with [`spawn_worker`] once it no longer needs the PENDING snapshot.
 pub async fn create_run(
     state: &AppState,
     creator: i64,
@@ -47,11 +48,13 @@ pub async fn create_run(
     tx.commit().await?;
     publish_status(&state.hub, &change);
     tracing::info!(run_id = change.id, case_id, "agent run created");
+    Ok(change.id)
+}
 
+/// Start the background worker for a freshly created run.
+pub fn spawn_worker(state: &AppState, run_id: i64) {
     let worker_state = state.clone();
-    let run_id = change.id;
     tokio::spawn(async move { process_run(worker_state, run_id).await });
-    Ok(run_id)
 }
 
 /// Background worker entry point. Never panics; failures are logged.

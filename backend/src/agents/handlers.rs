@@ -70,10 +70,11 @@ pub async fn create_run(
     }
     let snapshot = serde_json::to_value(&case.input_data.0).map_err(AppError::internal)?;
     let run_id = service::create_run(&state, user.id, case.id, req.reviewer_id, &snapshot).await?;
-    Ok((
-        StatusCode::ACCEPTED,
-        Json(load_dto(&state.db, run_id).await?),
-    ))
+    // Load the PENDING snapshot before the worker can move the run forward,
+    // so the 202 response always reflects the accepted (not yet processed) state.
+    let dto = load_dto(&state.db, run_id).await;
+    service::spawn_worker(&state, run_id);
+    Ok((StatusCode::ACCEPTED, Json(dto?)))
 }
 
 /// List runs: operators see runs they created, reviewers see runs assigned to them.
