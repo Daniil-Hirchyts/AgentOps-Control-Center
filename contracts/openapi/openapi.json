@@ -1,0 +1,2732 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "AgentOps Control Center API",
+    "description": "Instant messaging between two devices + AI-agent human-in-the-loop approvals.\n\nWebSocket: `GET /ws/messages?ticket=<wsTicket>` — frames are `ClientEvent` (client→server) and `ServerEvent` (server→client); see components.",
+    "license": {
+      "name": ""
+    },
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/api/agent-runs": {
+      "get": {
+        "tags": [
+          "agent-runs"
+        ],
+        "summary": "List runs: operators see runs they created, reviewers see runs assigned to them.",
+        "operationId": "list_runs",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/RunStatus"
+            }
+          },
+          {
+            "name": "caseId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_AgentRunDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "agent-runs"
+        ],
+        "summary": "Start an agent run on an owned case (OPERATOR). Processing is asynchronous.",
+        "operationId": "create_run",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateRunRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "description": "Run accepted (PENDING)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentRunDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/agent-runs/{id}": {
+      "get": {
+        "tags": [
+          "agent-runs"
+        ],
+        "summary": "Get a run (creator or assigned reviewer).",
+        "operationId": "get_run",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentRunDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/approvals": {
+      "get": {
+        "tags": [
+          "approvals"
+        ],
+        "summary": "List approvals: reviewers see those assigned to them, operators those they requested.",
+        "operationId": "list_approvals",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "description": "Filter by status (default: all)",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/ApprovalStatus"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_ApprovalDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/approvals/{id}": {
+      "get": {
+        "tags": [
+          "approvals"
+        ],
+        "summary": "Get an approval (assigned reviewer or requester).",
+        "operationId": "get_approval",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApprovalDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/approvals/{id}/decision": {
+      "post": {
+        "tags": [
+          "approvals"
+        ],
+        "summary": "Approve or reject (assigned REVIEWER only). Atomic; a second decision gets 409.",
+        "operationId": "decide",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DecisionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApprovalDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Already decided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/audit-events": {
+      "get": {
+        "tags": [
+          "audit"
+        ],
+        "summary": "Audit events for runs the caller may see (creator or assigned reviewer), ascending.",
+        "operationId": "list_audit_events",
+        "parameters": [
+          {
+            "name": "agentRunId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_AuditEventDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/auth/login": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Log in with username/password. Sets the HttpOnly refresh cookie.",
+        "operationId": "login",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "headers": {
+              "Set-Cookie": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "agentops_refresh cookie"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/logout": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Revoke the refresh token and clear the cookie.",
+        "operationId": "logout",
+        "parameters": [
+          {
+            "name": "X-Requested-With",
+            "in": "header",
+            "description": "must be `agentops`",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Logged out"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/me": {
+      "get": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Current user.",
+        "operationId": "me",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/auth/refresh": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Exchange the refresh cookie for a new access token (rotates the cookie).",
+        "operationId": "refresh_token",
+        "parameters": [
+          {
+            "name": "X-Requested-With",
+            "in": "header",
+            "description": "must be `agentops`",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "CSRF header missing or bad Origin",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/ws-ticket": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Issue a short-lived, single-use WebSocket ticket.",
+        "operationId": "ws_ticket",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WsTicket"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/cases": {
+      "get": {
+        "tags": [
+          "cases"
+        ],
+        "summary": "List the caller's own cases (OPERATOR).",
+        "operationId": "list_cases",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Page size (default 50, max 200)",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "description": "Offset (default 0)",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_CaseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "cases"
+        ],
+        "summary": "Create an invoice case (OPERATOR).",
+        "operationId": "create_case",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCaseRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/cases/{id}": {
+      "get": {
+        "tags": [
+          "cases"
+        ],
+        "summary": "Get a case: owner OPERATOR, or a REVIEWER assigned to one of its runs.",
+        "operationId": "get_case",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/comptes": {
+      "post": {
+        "tags": [
+          "users"
+        ],
+        "summary": "Create an account.",
+        "operationId": "create_account",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAccountRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Account created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountCreated"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Username taken",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/health": {
+      "get": {
+        "tags": [
+          "system"
+        ],
+        "summary": "Liveness/readiness: checks the database with `SELECT 1`.",
+        "operationId": "health",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthDto"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Database unreachable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/llm/models": {
+      "get": {
+        "tags": [
+          "system"
+        ],
+        "summary": "Models exposed by the OpenAI-compatible server (`GET {LLM_BASE_URL}/models`). OPERATOR only.",
+        "operationId": "llm_models",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LlmModelsDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/messages/{utilisateurId}": {
+      "get": {
+        "tags": [
+          "messages"
+        ],
+        "summary": "Conversation between the caller and another user, ascending by id.",
+        "operationId": "get_conversation",
+        "parameters": [
+          {
+            "name": "utilisateurId",
+            "in": "path",
+            "description": "Other user's id",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Max messages (default 200, max 500)",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "beforeId",
+            "in": "query",
+            "description": "Only messages with id < beforeId (pagination backwards)",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MessageDto"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/utilisateurs": {
+      "get": {
+        "tags": [
+          "users"
+        ],
+        "summary": "List all users (including the caller) with live online status.",
+        "operationId": "list_users",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UserDto"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AccountCreated": {
+        "type": "object",
+        "required": [
+          "id",
+          "username",
+          "role",
+          "createdAt"
+        ],
+        "properties": {
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "role": {
+            "$ref": "#/components/schemas/Role"
+          },
+          "username": {
+            "type": "string"
+          }
+        }
+      },
+      "ActionName": {
+        "type": "string",
+        "description": "Whitelisted actions the agent may propose. Only these Rust functions can ever run.",
+        "enum": [
+          "flag_invoice_for_review",
+          "no_action"
+        ]
+      },
+      "AgentAnalysis": {
+        "type": "object",
+        "description": "Validated analysis produced by the agent (API/DB representation, camelCase).",
+        "required": [
+          "riskLevel",
+          "reasoningSummary",
+          "recommendedAction",
+          "requiresApproval"
+        ],
+        "properties": {
+          "reasoningSummary": {
+            "type": "string"
+          },
+          "recommendedAction": {
+            "$ref": "#/components/schemas/ActionName"
+          },
+          "requiresApproval": {
+            "type": "boolean",
+            "description": "Set by backend policy, not by the model."
+          },
+          "riskLevel": {
+            "$ref": "#/components/schemas/RiskLevel"
+          }
+        }
+      },
+      "AgentRunDto": {
+        "type": "object",
+        "required": [
+          "id",
+          "caseId",
+          "caseTitle",
+          "status",
+          "modelIdentifier",
+          "llmMode",
+          "inputSnapshot",
+          "attempts",
+          "reviewerId",
+          "createdBy",
+          "createdAt",
+          "updatedAt"
+        ],
+        "properties": {
+          "approval": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ApprovalDto"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "attempts": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "caseId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "caseTitle": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdBy": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "error": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "inputSnapshot": {
+            "$ref": "#/components/schemas/InvoiceInput"
+          },
+          "llmMode": {
+            "$ref": "#/components/schemas/LlmMode"
+          },
+          "modelIdentifier": {
+            "type": "string"
+          },
+          "output": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AgentAnalysis"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reviewerId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "status": {
+            "$ref": "#/components/schemas/RunStatus"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "AgentStatusEvent": {
+        "type": "object",
+        "required": [
+          "runId",
+          "caseId",
+          "status",
+          "updatedAt"
+        ],
+        "properties": {
+          "caseId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "runId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "status": {
+            "$ref": "#/components/schemas/RunStatus"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ApprovalDto": {
+        "type": "object",
+        "required": [
+          "id",
+          "agentRunId",
+          "caseId",
+          "caseTitle",
+          "reviewerId",
+          "reviewerUsername",
+          "requestedBy",
+          "requestedByUsername",
+          "proposedAction",
+          "riskLevel",
+          "reasoningSummary",
+          "invoice",
+          "status",
+          "createdAt"
+        ],
+        "properties": {
+          "agentRunId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "caseId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "caseTitle": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "decidedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "decidedBy": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "decisionReason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "invoice": {
+            "$ref": "#/components/schemas/InvoiceInput"
+          },
+          "proposedAction": {
+            "$ref": "#/components/schemas/ActionName"
+          },
+          "reasoningSummary": {
+            "type": "string"
+          },
+          "requestedBy": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "requestedByUsername": {
+            "type": "string"
+          },
+          "reviewerId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "reviewerUsername": {
+            "type": "string"
+          },
+          "riskLevel": {
+            "$ref": "#/components/schemas/RiskLevel"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ApprovalStatus"
+          }
+        }
+      },
+      "ApprovalRequestedEvent": {
+        "type": "object",
+        "required": [
+          "approvalId",
+          "runId",
+          "caseId",
+          "caseTitle",
+          "riskLevel",
+          "proposedAction",
+          "requestedBy",
+          "createdAt"
+        ],
+        "properties": {
+          "approvalId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "caseId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "caseTitle": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "proposedAction": {
+            "$ref": "#/components/schemas/ActionName"
+          },
+          "requestedBy": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "riskLevel": {
+            "$ref": "#/components/schemas/RiskLevel"
+          },
+          "runId": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "ApprovalResolvedEvent": {
+        "type": "object",
+        "required": [
+          "approvalId",
+          "runId",
+          "status",
+          "decidedBy",
+          "decidedAt"
+        ],
+        "properties": {
+          "approvalId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "decidedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "decidedBy": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "runId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ApprovalStatus"
+          }
+        }
+      },
+      "ApprovalStatus": {
+        "type": "string",
+        "description": "Approval request status.",
+        "enum": [
+          "PENDING",
+          "APPROVED",
+          "REJECTED"
+        ]
+      },
+      "AuditEventDto": {
+        "type": "object",
+        "required": [
+          "id",
+          "eventType",
+          "payload",
+          "createdAt"
+        ],
+        "properties": {
+          "actorId": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "actorUsername": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "agentRunId": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "eventType": {
+            "type": "string"
+          },
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "payload": {
+            "type": "object"
+          }
+        }
+      },
+      "CaseDto": {
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "invoice",
+          "status",
+          "createdBy",
+          "createdAt",
+          "updatedAt"
+        ],
+        "properties": {
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdBy": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "invoice": {
+            "$ref": "#/components/schemas/InvoiceInput"
+          },
+          "status": {
+            "$ref": "#/components/schemas/CaseStatus"
+          },
+          "title": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "CaseStatus": {
+        "type": "string",
+        "description": "Business case status.",
+        "enum": [
+          "OPEN",
+          "FLAGGED_FOR_REVIEW",
+          "CLOSED"
+        ]
+      },
+      "ClientEvent": {
+        "oneOf": [
+          {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ClientMessage"
+              },
+              {
+                "type": "object",
+                "required": [
+                  "type"
+                ],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "message"
+                    ]
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ClientTyping"
+              },
+              {
+                "type": "object",
+                "required": [
+                  "type"
+                ],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "typing"
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        ],
+        "description": "Every client → server frame. Discriminated by `type`."
+      },
+      "ClientMessage": {
+        "type": "object",
+        "description": "Send a message. `expediteurId` / `dateEnvoi` are accepted for compatibility but ignored:\nthe server always uses the authenticated identity and its own clock.",
+        "required": [
+          "destinataireId",
+          "contenu"
+        ],
+        "properties": {
+          "clientMessageId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "contenu": {
+            "type": "string"
+          },
+          "dateEnvoi": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Ignored."
+          },
+          "destinataireId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "expediteurId": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "Ignored."
+          }
+        }
+      },
+      "ClientTyping": {
+        "type": "object",
+        "required": [
+          "destinataireId",
+          "isTyping"
+        ],
+        "properties": {
+          "destinataireId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "isTyping": {
+            "type": "boolean"
+          }
+        }
+      },
+      "CreateAccountRequest": {
+        "type": "object",
+        "required": [
+          "username",
+          "password"
+        ],
+        "properties": {
+          "password": {
+            "type": "string",
+            "description": "8–128 chars"
+          },
+          "role": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Role",
+                "description": "Defaults to OPERATOR"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "username": {
+            "type": "string",
+            "description": "3–32 chars, `[A-Za-z0-9_.-]`"
+          }
+        }
+      },
+      "CreateCaseRequest": {
+        "type": "object",
+        "required": [
+          "title",
+          "invoice"
+        ],
+        "properties": {
+          "invoice": {
+            "$ref": "#/components/schemas/InvoiceInput"
+          },
+          "title": {
+            "type": "string"
+          }
+        }
+      },
+      "CreateRunRequest": {
+        "type": "object",
+        "required": [
+          "caseId",
+          "reviewerId"
+        ],
+        "properties": {
+          "caseId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "reviewerId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Must be a REVIEWER different from the caller."
+          }
+        }
+      },
+      "Decision": {
+        "type": "string",
+        "description": "Reviewer decision.",
+        "enum": [
+          "approve",
+          "reject"
+        ]
+      },
+      "DecisionRequest": {
+        "type": "object",
+        "required": [
+          "decision"
+        ],
+        "properties": {
+          "decision": {
+            "$ref": "#/components/schemas/Decision"
+          },
+          "reason": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Optional, at most 1000 characters"
+          }
+        }
+      },
+      "ErrorBody": {
+        "type": "object",
+        "description": "Error body: `{\"error\": {\"code\": \"...\", \"message\": \"...\"}}`.",
+        "required": [
+          "error"
+        ],
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/ErrorDetail"
+          }
+        }
+      },
+      "ErrorDetail": {
+        "type": "object",
+        "required": [
+          "code",
+          "message"
+        ],
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "snake_case error code (unauthorized, forbidden, not_found, conflict, validation_error, ...)"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "ErrorEvent": {
+        "type": "object",
+        "required": [
+          "code",
+          "message"
+        ],
+        "properties": {
+          "clientMessageId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "HealthDto": {
+        "type": "object",
+        "required": [
+          "status",
+          "database",
+          "llm"
+        ],
+        "properties": {
+          "database": {
+            "type": "string",
+            "description": "\"ok\" | \"error\""
+          },
+          "llm": {
+            "$ref": "#/components/schemas/LlmHealth"
+          },
+          "status": {
+            "type": "string",
+            "description": "\"ok\" | \"degraded\""
+          }
+        }
+      },
+      "InvoiceInput": {
+        "type": "object",
+        "description": "Synthetic invoice data analysed by the agent.",
+        "required": [
+          "invoiceNumber",
+          "vendor",
+          "amount",
+          "currency",
+          "issueDate",
+          "description"
+        ],
+        "properties": {
+          "amount": {
+            "type": "number",
+            "format": "double"
+          },
+          "currency": {
+            "type": "string",
+            "description": "ISO 4217, 3 letters"
+          },
+          "description": {
+            "type": "string"
+          },
+          "historicalAverage": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "invoiceNumber": {
+            "type": "string"
+          },
+          "issueDate": {
+            "type": "string",
+            "format": "date",
+            "description": "YYYY-MM-DD",
+            "example": "2026-10-01"
+          },
+          "vendor": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "LlmHealth": {
+        "type": "object",
+        "required": [
+          "mode",
+          "provider",
+          "model"
+        ],
+        "properties": {
+          "mode": {
+            "$ref": "#/components/schemas/LlmMode"
+          },
+          "model": {
+            "type": "string"
+          },
+          "provider": {
+            "type": "string"
+          },
+          "reachable": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "null in mock mode (not probed)"
+          }
+        }
+      },
+      "LlmMode": {
+        "type": "string",
+        "description": "LLM execution mode.",
+        "enum": [
+          "real",
+          "mock"
+        ]
+      },
+      "LlmModelsDto": {
+        "type": "object",
+        "required": [
+          "mode",
+          "baseUrl",
+          "models",
+          "reachable"
+        ],
+        "properties": {
+          "baseUrl": {
+            "type": "string"
+          },
+          "configuredModel": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "mode": {
+            "$ref": "#/components/schemas/LlmMode"
+          },
+          "models": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "reachable": {
+            "type": "boolean"
+          }
+        }
+      },
+      "LoginRequest": {
+        "type": "object",
+        "required": [
+          "username",
+          "password"
+        ],
+        "properties": {
+          "password": {
+            "type": "string"
+          },
+          "username": {
+            "type": "string"
+          }
+        }
+      },
+      "LoginResponse": {
+        "type": "object",
+        "required": [
+          "accessToken",
+          "tokenType",
+          "expiresIn",
+          "user"
+        ],
+        "properties": {
+          "accessToken": {
+            "type": "string"
+          },
+          "expiresIn": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Access token lifetime in seconds"
+          },
+          "tokenType": {
+            "type": "string",
+            "description": "Always \"Bearer\""
+          },
+          "user": {
+            "$ref": "#/components/schemas/UserDto"
+          }
+        }
+      },
+      "MessageDto": {
+        "type": "object",
+        "required": [
+          "id",
+          "expediteurId",
+          "destinataireId",
+          "contenu",
+          "dateEnvoi"
+        ],
+        "properties": {
+          "contenu": {
+            "type": "string"
+          },
+          "dateEnvoi": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "destinataireId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "expediteurId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "MessageEvent": {
+        "type": "object",
+        "required": [
+          "id",
+          "expediteurId",
+          "destinataireId",
+          "contenu",
+          "dateEnvoi"
+        ],
+        "properties": {
+          "clientMessageId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "contenu": {
+            "type": "string"
+          },
+          "dateEnvoi": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "destinataireId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "expediteurId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "Page_AgentRunDto": {
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "limit",
+          "offset"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "caseId",
+                "caseTitle",
+                "status",
+                "modelIdentifier",
+                "llmMode",
+                "inputSnapshot",
+                "attempts",
+                "reviewerId",
+                "createdBy",
+                "createdAt",
+                "updatedAt"
+              ],
+              "properties": {
+                "approval": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ApprovalDto"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "attempts": {
+                  "type": "integer",
+                  "format": "int32"
+                },
+                "caseId": {
+                  "type": "integer",
+                  "format": "int64"
+                },
+                "caseTitle": {
+                  "type": "string"
+                },
+                "createdAt": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "createdBy": {
+                  "type": "integer",
+                  "format": "int64"
+                },
+                "error": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "id": {
+                  "type": "integer",
+                  "format": "int64"
+                },
+                "inputSnapshot": {
+                  "$ref": "#/components/schemas/InvoiceInput"
+                },
+                "llmMode": {
+                  "$ref": "#/components/schemas/LlmMode"
+                },
+                "modelIdentifier": {
+                  "type": "string"
+                },
+                "output": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/AgentAnalysis"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "reviewerId": {
+                  "type": "integer",
+                  "format": "int64"
+                },
+                "status": {
+                  "$ref": "#/components/schemas/RunStatus"
+                },
+                "updatedAt": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              }
+            }
+          },
+          "limit": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "offset": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "Page_ApprovalDto": {
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "limit",
+          "offset"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "agentRunId",
+                "caseId",
+                "caseTitle",
+                "reviewerId",
+                "reviewerUsername",
+                "requestedBy",
+                "requestedByUsername",
+                "proposedAction",
+                "riskLevel",
+                "reasoningSummary",
+                "invoice",
+                "status",
+                "createdAt"
+              ],
+              "properties": {
+                "agentRunId": {
+                  "type": "integer",
+                  "format": "int64"
+                },
+                "caseId": {
+                  "type": "integer",
+                  "format": "int64"
+                },
+                "caseTitle": {
+                  "type": "string"
+                },
+                "createdAt": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "decidedAt": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time"
+                },
+                "decidedBy": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "format": "int64"
+                },
+                "decisionReason": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "id": {
+                  "type": "integer",
+                  "format": "int64"
+                },
+                "invoice": {
+                  "$ref": "#/components/schemas/InvoiceInput"
+                },
+                "proposedAction": {
+                  "$ref": "#/components/schemas/ActionName"
+                },
+                "reasoningSummary": {
+                  "type": "string"
+                },
+                "requestedBy": {
+                  "type": "integer",
+                  "format": "int64"
+                },
+                "requestedByUsername": {
+                  "type": "string"
+                },
+                "reviewerId": {
+                  "type": "integer",
+                  "format": "int64"
+                },
+                "reviewerUsername": {
+                  "type": "string"
+                },
+                "riskLevel": {
+                  "$ref": "#/components/schemas/RiskLevel"
+                },
+                "status": {
+                  "$ref": "#/components/schemas/ApprovalStatus"
+                }
+              }
+            }
+          },
+          "limit": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "offset": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "Page_AuditEventDto": {
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "limit",
+          "offset"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "eventType",
+                "payload",
+                "createdAt"
+              ],
+              "properties": {
+                "actorId": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "format": "int64"
+                },
+                "actorUsername": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "agentRunId": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "format": "int64"
+                },
+                "createdAt": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "eventType": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "integer",
+                  "format": "int64"
+                },
+                "payload": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "limit": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "offset": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "Page_CaseDto": {
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "limit",
+          "offset"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "title",
+                "invoice",
+                "status",
+                "createdBy",
+                "createdAt",
+                "updatedAt"
+              ],
+              "properties": {
+                "createdAt": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "createdBy": {
+                  "type": "integer",
+                  "format": "int64"
+                },
+                "id": {
+                  "type": "integer",
+                  "format": "int64"
+                },
+                "invoice": {
+                  "$ref": "#/components/schemas/InvoiceInput"
+                },
+                "status": {
+                  "$ref": "#/components/schemas/CaseStatus"
+                },
+                "title": {
+                  "type": "string"
+                },
+                "updatedAt": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              }
+            }
+          },
+          "limit": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "offset": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "RiskLevel": {
+        "type": "string",
+        "description": "Risk level produced by the analysis.",
+        "enum": [
+          "low",
+          "medium",
+          "high"
+        ]
+      },
+      "Role": {
+        "type": "string",
+        "description": "User role.",
+        "enum": [
+          "OPERATOR",
+          "REVIEWER"
+        ]
+      },
+      "RunStatus": {
+        "type": "string",
+        "description": "Agent run lifecycle status (see the state machine in CONTRACT.md).",
+        "enum": [
+          "PENDING",
+          "RUNNING",
+          "AWAITING_APPROVAL",
+          "APPROVED",
+          "REJECTED",
+          "COMPLETED",
+          "CANCELLED",
+          "FAILED"
+        ]
+      },
+      "ServerEvent": {
+        "oneOf": [
+          {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/MessageEvent"
+              },
+              {
+                "type": "object",
+                "required": [
+                  "type"
+                ],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "message"
+                    ]
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/UserPresenceEvent"
+              },
+              {
+                "type": "object",
+                "required": [
+                  "type"
+                ],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "user_presence"
+                    ]
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TypingEvent"
+              },
+              {
+                "type": "object",
+                "required": [
+                  "type"
+                ],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "typing"
+                    ]
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AgentStatusEvent"
+              },
+              {
+                "type": "object",
+                "required": [
+                  "type"
+                ],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "agent_status"
+                    ]
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ApprovalRequestedEvent"
+              },
+              {
+                "type": "object",
+                "required": [
+                  "type"
+                ],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "approval_requested"
+                    ]
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ApprovalResolvedEvent"
+              },
+              {
+                "type": "object",
+                "required": [
+                  "type"
+                ],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "approval_resolved"
+                    ]
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ErrorEvent"
+              },
+              {
+                "type": "object",
+                "required": [
+                  "type"
+                ],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "error"
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        ],
+        "description": "Every server → client frame. Discriminated by `type`."
+      },
+      "TypingEvent": {
+        "type": "object",
+        "required": [
+          "expediteurId",
+          "destinataireId",
+          "isTyping"
+        ],
+        "properties": {
+          "destinataireId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "expediteurId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "isTyping": {
+            "type": "boolean"
+          }
+        }
+      },
+      "UserDto": {
+        "type": "object",
+        "required": [
+          "id",
+          "username",
+          "role",
+          "online",
+          "createdAt"
+        ],
+        "properties": {
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "online": {
+            "type": "boolean",
+            "description": "Live presence: true when the user holds at least one WebSocket connection."
+          },
+          "role": {
+            "$ref": "#/components/schemas/Role"
+          },
+          "username": {
+            "type": "string"
+          }
+        }
+      },
+      "UserPresenceEvent": {
+        "type": "object",
+        "required": [
+          "userId",
+          "username",
+          "online"
+        ],
+        "properties": {
+          "online": {
+            "type": "boolean"
+          },
+          "userId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "username": {
+            "type": "string"
+          }
+        }
+      },
+      "WsTicket": {
+        "type": "object",
+        "required": [
+          "ticket",
+          "expiresIn"
+        ],
+        "properties": {
+          "expiresIn": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "ticket": {
+            "type": "string",
+            "description": "Short-lived JWT (aud `ws`) for `/ws/messages?ticket=`; single use."
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "bearer": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "auth"
+    },
+    {
+      "name": "users"
+    },
+    {
+      "name": "messages"
+    },
+    {
+      "name": "cases"
+    },
+    {
+      "name": "agent-runs"
+    },
+    {
+      "name": "approvals"
+    },
+    {
+      "name": "audit"
+    },
+    {
+      "name": "system"
+    }
+  ]
+}
