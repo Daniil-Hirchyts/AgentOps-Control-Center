@@ -20,6 +20,8 @@ export type ToolPart = {
   output?: Record<string, unknown> | string
   errorText?: string
   icon?: ReactNode
+  /** Rendered as-is in place of the icon box (an agent avatar). */
+  avatar?: ReactNode
   meta?: ReactNode
   /** Overrides the state word, e.g. "Rejected" or "Ran once". */
   stateLabel?: string
@@ -57,10 +59,11 @@ export function Tool({
   const hasBody = (input && Object.keys(input).length > 0) || output !== undefined || !!errorText
 
   return (
-    <div className={cn('surface overflow-hidden rounded-lg', className)} data-testid={testId} data-state={state}>
+    <div className={cn('surface overflow-hidden rounded-xl', className)} data-testid={testId} data-state={state}>
       <Collapsible open={open} onOpenChange={setOpen} disabled={!hasBody}>
         <CollapsibleTrigger className="group flex min-h-11 w-full items-center gap-3 px-3 text-start transition-colors duration-150 hover:bg-bg-subtle disabled:cursor-default disabled:hover:bg-transparent">
-          {toolPart.icon && (
+          {toolPart.avatar}
+          {!toolPart.avatar && toolPart.icon && (
             <span className="inline-flex size-7 shrink-0 items-center justify-center rounded-md bg-bg-muted text-text-secondary [&_svg]:size-4">
               {toolPart.icon}
             </span>

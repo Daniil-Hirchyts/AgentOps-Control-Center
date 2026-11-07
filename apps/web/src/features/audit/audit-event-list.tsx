@@ -1,4 +1,7 @@
+import { AgentAvatar } from '@/components/shared/agent-avatar'
+import { UserAvatar } from '@/components/shared/presence'
 import { Dot } from '@/components/shared/status'
+import { agentForEvent } from '@/features/agents/agents'
 import { AUDIT_EVENT_TONE, auditEventLabel } from '@/lib/labels'
 import type { AuditEventDto } from '@/lib/types'
 import { cn, formatDateTime, formatTime } from '@/lib/utils'
@@ -34,9 +37,16 @@ function AuditItem({ event: e }: { event: AuditEventDto }) {
           {formatTime(e.createdAt)}
         </time>
       </div>
-      <p className="text-13 text-text-secondary">
-        {e.actorUsername ?? 'System'}
-        {summary && <> · {summary}</>}
+      <p className="mt-0.5 flex items-start gap-1.5 text-13 text-text-secondary">
+        {e.actorUsername ? (
+          <UserAvatar username={e.actorUsername} size="xs" className="mt-px scale-[0.83]" />
+        ) : (
+          <AgentAvatar agent={agentForEvent(e.eventType)} size="xs" className="mt-px scale-[0.83]" />
+        )}
+        <span className="min-w-0">
+          <span className="text-text">{e.actorUsername ?? agentForEvent(e.eventType).name}</span>
+          {summary && <> · {summary}</>}
+        </span>
       </p>
     </>
   )

@@ -2,7 +2,8 @@
  * The agent's work, shown as evidence, reasoning and calls — shared by the operator's run
  * page and the reviewer's approval page.
  */
-import { BookCheck, FileSearch, KeyRound, Scale, ScanText, Stamp } from 'lucide-react'
+import { BookCheck, FileSearch, Scale } from 'lucide-react'
+import { AgentAvatar } from '@/components/shared/agent-avatar'
 import {
   ChainOfThought,
   ChainOfThoughtContent,
@@ -15,6 +16,7 @@ import { DeviationBar, HIGH_RATIO, RiskGauge } from '@/components/shared/invoice
 import { actionLabel, LLM_MODE_LABEL } from '@/lib/labels'
 import type { ActionName, AgentRunDto, InvoiceInput, RiskLevel } from '@/lib/types'
 import { deviation, formatDate, formatMoney } from '@/lib/utils'
+import { AGENTS } from './agents'
 
 /** Gauge + comparison bar: the two things the risk decision rests on. */
 export function Evidence({ invoice, risk }: { invoice: InvoiceInput; risk: RiskLevel }) {
@@ -83,8 +85,8 @@ export function AgentCalls({ run }: { run: AgentRunDto }) {
     key: 'model',
     title: 'Analyze invoice',
     name: run.modelIdentifier,
-    icon: <ScanText />,
-    meta: `${LLM_MODE_LABEL[run.llmMode]} · ${run.attempts} ${run.attempts === 1 ? 'attempt' : 'attempts'}`,
+    avatar: <AgentAvatar agent={AGENTS.analyst} size="md" />,
+    meta: `${AGENTS.analyst.name} · ${LLM_MODE_LABEL[run.llmMode]} · ${run.attempts} ${run.attempts === 1 ? 'attempt' : 'attempts'}`,
     state: output ? 'output-available' : run.error ? 'output-error' : run.status === 'PENDING' ? 'input-available' : 'input-streaming',
     stateLabel: run.status === 'PENDING' ? 'Queued' : undefined,
     input: {
@@ -103,8 +105,8 @@ export function AgentCalls({ run }: { run: AgentRunDto }) {
       key: 'approval',
       title: 'Request human approval',
       name: 'request_approval',
-      icon: <KeyRound />,
-      meta: approval ? `Reviewer ${approval.reviewerUsername}` : undefined,
+      avatar: <AgentAvatar agent={AGENTS.gatekeeper} size="md" />,
+      meta: approval ? `${AGENTS.gatekeeper.name} · reviewer ${approval.reviewerUsername}` : AGENTS.gatekeeper.name,
       state: !approval
         ? 'input-streaming'
         : approval.status === 'PENDING'
@@ -128,8 +130,8 @@ export function AgentCalls({ run }: { run: AgentRunDto }) {
       key: 'action',
       title: actionLabel(output.recommendedAction),
       name: output.recommendedAction,
-      icon: <Stamp />,
-      meta: 'Runs at most once, after approval',
+      avatar: <AgentAvatar agent={AGENTS.executor} size="md" />,
+      meta: `${AGENTS.executor.name} · at most once, after approval`,
       state: ran ? 'output-available' : skipped ? 'skipped' : run.status === 'RUNNING' || run.status === 'APPROVED' ? 'input-streaming' : 'input-available',
       stateLabel: ran ? 'Ran once' : skipped ? 'Not run' : run.status === 'AWAITING_APPROVAL' ? 'Blocked' : undefined,
       input: { caseId: run.caseId },
