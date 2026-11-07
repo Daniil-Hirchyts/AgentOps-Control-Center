@@ -9,7 +9,7 @@ export function LoginPage({ redirectTo }: { redirectTo?: string }) {
   const setSession = useAuthStore((s) => s.setSession)
   useDocumentTitle('Sign in')
   return (
-    <AuthLayout title="Sign in" subtitle="Human-in-the-loop review for AI agent runs.">
+    <AuthLayout title="Sign in" subtitle="Supervise AI agents and approve what they do.">
       <LoginForm
         onSuccess={(session) => {
           setSession(session)

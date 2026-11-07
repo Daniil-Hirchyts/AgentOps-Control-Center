@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router'
-import { ArrowRight } from 'lucide-react'
+import { Activity, ArrowRight, Bot, Hand, Radio, Wrench, type LucideIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { PageContainer } from '@/components/layout/app-shell'
 import { AgentAvatar } from '@/components/shared/agent-avatar'
@@ -20,21 +20,28 @@ export function ConceptPage() {
       <header className="mb-12 max-w-2xl sm:mb-16">
         <p className="mb-3 animate-fade-up text-13 font-medium text-accent-text">Concept</p>
         <h1 className="animate-fade-up text-3xl font-semibold tracking-[-0.03em] text-balance [animation-delay:100ms] sm:text-[2.5rem] sm:leading-[1.1]">
-          A messenger where an AI may propose, but only a person can approve.
+          AI agents do the work. People approve what matters.
         </h1>
         <p className="mt-4 animate-fade-up text-base text-pretty text-text-secondary [animation-delay:200ms]">
-          The project started as an instant messenger between two devices. AgentOps gives the two people a reason to talk: an AI agent
-          checks invoices, and when it wants to act on one, a human has to say yes first.
+          AgentOps Control Center is a platform for supervising and validating AI agents. An agent carries out a task on its own and stops
+          to ask when an action is sensitive. Two people discuss it in real time, then authorize or reject the action.
         </p>
       </header>
+
+      <Block title="Five ideas it puts to work">
+        <Ideas />
+      </Block>
 
       <Block title="What we simulate">
         <div className="grid gap-4 md:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
           <div className="rounded-3xl bg-hue-stone p-6 sm:p-8">
-            <p className="text-lg font-semibold tracking-[-0.01em]">The accounts-payable team of a fictional company.</p>
+            <p className="text-lg font-semibold tracking-[-0.01em]">
+              The agent works for the accounts-payable team of a fictional company.
+            </p>
             <p className="mt-3 text-sm text-text-secondary">
-              Vendors send invoices. Most are routine, but some are not: a bill five times the usual amount, the same work billed twice, a
-              large first invoice from a vendor nobody knows. Checking each one by hand is slow, so an agent reads them first.
+              Supervising an agent needs a concrete task, so ours checks invoices. Vendors send invoices. Most are routine, but some are
+              not: a bill five times the usual amount, the same work billed twice, a large first invoice from a vendor nobody knows.
+              Checking each one by hand is slow, so an agent reads them first.
             </p>
             <p className="mt-3 text-sm text-text-secondary">
               When the agent finds something odd it proposes to{' '}
@@ -160,6 +167,59 @@ export function ConceptPage() {
         </div>
       </div>
     </PageContainer>
+  )
+}
+
+const IDEAS: { icon: LucideIcon; title: string; text: string; where: string }[] = [
+  {
+    icon: Bot,
+    title: 'Agentic AI',
+    text: 'Agents take a task and see it through on their own: the Run Orchestrator moves each run through its states, the Invoice Risk Analyst reads the invoice and decides what to propose.',
+    where: 'Runs, and the pipeline on every case',
+  },
+  {
+    icon: Hand,
+    title: 'Human in the loop',
+    text: 'A sensitive action stops at a gate. Only the reviewer it is assigned to can release it, and a rejection, a timeout or an error never counts as a yes.',
+    where: 'The reviewer’s approval inbox',
+  },
+  {
+    icon: Wrench,
+    title: 'Tool calling',
+    text: 'The model never acts directly. It answers with a call to one of two allowed tools, flag the invoice or do nothing, and the call is checked against a strict schema first.',
+    where: 'The tool calls on a run page',
+  },
+  {
+    icon: Activity,
+    title: 'Observability',
+    text: 'Every run shows its stage, the model’s reasoning and each tool call with its input and output. The audit log records who did what, and when.',
+    where: 'Run pages and the audit log',
+  },
+  {
+    icon: Radio,
+    title: 'WebSocket',
+    text: 'Approval requests, run updates, presence and chat messages reach both devices the moment they happen, so the operator and the reviewer can decide together.',
+    where: 'Messages, and the live map on Architecture',
+  },
+]
+
+function Ideas() {
+  return (
+    <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
+      {IDEAS.map((idea, i) => (
+        <li key={idea.title} className={cn('surface flex flex-col rounded-2xl p-5 lg:col-span-2', i >= 3 && 'lg:col-span-3')}>
+          <span className="inline-flex size-9 items-center justify-center rounded-xl bg-bg-muted text-text [&_svg]:size-[18px]">
+            <idea.icon aria-hidden strokeWidth={1.75} />
+          </span>
+          <p className="mt-4 text-sm font-semibold">{idea.title}</p>
+          <p className="mt-1 flex-1 text-13 text-pretty text-text-secondary">{idea.text}</p>
+          <p className="mt-4 text-xs text-text-tertiary">
+            <span className="sr-only">Where to see it: </span>
+            {idea.where}
+          </p>
+        </li>
+      ))}
+    </ul>
   )
 }
 

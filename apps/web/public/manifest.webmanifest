@@ -1,7 +1,7 @@
 {
   "name": "AgentOps",
   "short_name": "AgentOps",
-  "description": "Instant messaging with a human-approved AI agent.",
+  "description": "Supervise AI agents and approve their sensitive actions in real time.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#fbfaf9",

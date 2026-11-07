@@ -1,13 +1,17 @@
 # AgentOps Control Center
 
-Instant messaging between two devices (university project, course *API and Web Services*), extended into a
-Human-in-the-Loop approval platform for an AI agent running on a local LLM.
+A platform for supervising and validating AI agents (university project, course *API and Web Services*).
+An AI agent carries out tasks, asks for validation when an action is sensitive, and two operators discuss it in
+real time to authorize or reject the action.
 
-- **Messaging:** accounts, JWT login, user list with live presence, real-time messages over WebSocket, history over
-  REST, offline recipients, typing indicator. Demonstrated between a laptop and a phone.
-- **AgentOps:** an operator submits an invoice; an agent (LM Studio or a deterministic mock) assesses the risk and
-  proposes an action; a reviewer approves or rejects it in real time from another device; the approved action is
-  executed exactly once and every step is audited.
+Concepts: agentic AI, human-in-the-loop, tool calling, observability, WebSocket.
+
+- **Agents and approvals:** an operator submits an invoice; an agent (LM Studio or a deterministic mock) assesses the
+  risk and proposes an action through a tool call; a reviewer approves or rejects it in real time from another device;
+  the approved action is executed exactly once and every step is audited.
+- **Real-time collaboration:** accounts, JWT login, user list with live presence, messages over WebSocket with
+  history over REST, offline recipients and a typing indicator, so the operator and the reviewer can talk the
+  decision over. Demonstrated between a laptop and a phone.
 - **Learn pages in the app:** `/learn/concept` explains what is simulated and what each demo case is for;
   `/learn/architecture` walks through the servers, REST vs WebSocket and the approval loop with diagrams.
 
