@@ -4,50 +4,45 @@
 
 # AgentOps Control Center
 
-Instant messaging between two devices, extended into a console where people approve what an AI agent wants to do.
+A console for supervising AI agents: the agent proposes, a person approves from any device, and the action runs
+exactly once.
 
-[Architecture](docs/architecture.md) · [API](docs/api.md) · [Assignment coverage](#assignment-coverage) · [Run it](#run-it)
+[Features](#features) · [How it works](#how-it-works) · [Run it](#run-it) · [Architecture](docs/architecture.md) · [API](docs/api.md)
 
 <img src="docs/screenshots/demo-two-devices.png" alt="The same conversation open on a laptop as Alice and on a phone as Bob" width="960"/>
 
-<sub>Alice on a laptop and Bob on a phone: two independent sessions exchanging messages through the server, on synthetic data.</sub>
+<sub>Alice, the operator, and Bob, the reviewer, discuss a flagged invoice from a laptop and a phone (synthetic data).</sub>
 
 </div>
 
 ## About
 
-The assignment asks for an instant-messaging API between two devices: accounts, JWT login, a user list, messages over
-WebSocket and history over REST. AgentOps builds that, then uses it for a concrete job: supervising an AI agent.
+AI agents are useful until they want to do something that matters. AgentOps puts a person between the
+recommendation and the action. An operator hands the agent a case, the agent analyses it and proposes an action
+through a tool call, and a reviewer approves or rejects it in real time, from a laptop or a phone. The two can talk the
+decision over in the built-in chat. Nothing runs without that approval, and every step is recorded.
 
-- **Agents and approvals:** an operator submits an invoice; an agent (any OpenAI-compatible model, or a deterministic
-  mock) assesses the risk and proposes an action through a tool call; a reviewer approves or rejects it in real time
-  from another device; the approved action is executed exactly once and every step is audited.
-- **Real-time collaboration:** live presence, messages with offline delivery and a typing indicator, so the operator
-  and the reviewer can talk the decision over.
-- **Learn pages in the app:** `/learn/concept` explains what is simulated and what each demo case is for;
-  `/learn/architecture` walks through the servers, REST vs WebSocket and the approval loop with live diagrams.
+The demo case is invoice fraud: an invoice far above the vendor's usual amount, with a change of bank details, gets
+flagged for review.
 
-This is an MVP. The invoice case is simulated, the model is a mock by default, there are two fixed roles and a single
-server instance; these simplifications are deliberate.
+## Features
+
+- **Human approval for agent actions.** The model only recommends; actions come from a fixed allowlist, the backend
+  decides what needs approval, and an approved action is executed exactly once, even after a retry or a restart.
+- **Real-time messaging.** Accounts, live presence, typing indicator, and messages that reach offline users when they
+  come back.
+- **Any device.** The same app on desktop and mobile; status changes and approval requests appear live on both.
+- **Bring your own model.** Any OpenAI-compatible API, local or hosted, or a deterministic mock that needs nothing.
+- **Audit trail.** Every run, model response, decision and action is logged with its author.
+- **Security by default.** Argon2id passwords, short-lived tokens kept in memory, an HttpOnly refresh cookie,
+  single-use WebSocket tickets, Origin checks and rate limits.
+- **Documented API.** OpenAPI 3.1 with Swagger UI, plus a reference with curl and WebSocket examples.
+- **Explains itself.** In-app pages walk through the concept and the architecture with live diagrams.
+
+AgentOps is an MVP: the invoice workflow is a demonstration case, the model is a mock by default, there are two fixed
+roles (operator and reviewer) and the server runs as a single instance.
 
 Stack: Rust (Axum, Tokio, SQLx) · PostgreSQL 17 · React + Vite + TypeScript · Docker Compose · Caddy.
-
-## Assignment coverage
-
-| Requirement | Implementation |
-| --- | --- |
-| Account creation | `POST /api/comptes`, Argon2id hashing, database constraints |
-| JWT authentication | `POST /api/auth/login`, Bearer access token, HttpOnly refresh cookie |
-| User list | `GET /api/utilisateurs`, with a live `online` flag |
-| Real-time messages over WebSocket | `/ws/messages`, delivered to the recipient and echoed to the sender |
-| History over REST | `GET /api/messages/{utilisateurId}` |
-| Offline recipient | messages stored before delivery, refetched over REST on reconnect |
-| WebSocket security | short-lived ticket, Origin check, frame size and rate limits |
-| Persistence | PostgreSQL, migrations embedded in the binary |
-| Two-device demo | laptop and phone on the same Wi-Fi, [script](docs/development.md#6-two-device-demo) |
-| Bonus | OpenAPI / Swagger UI, typing indicator, WebSocket rate limiting |
-| Extension | AI agent with human approval, state machine, exactly-once execution, audit trail |
-| Tests | backend integration tests, frontend tests, two-browser Playwright E2E |
 
 ## How it works
 
@@ -130,7 +125,7 @@ The [development guide](docs/development.md) covers the
 
 ## Authors
 
-Daniil Hirchyts and Mattéo Louet, for API et Web Services at EFREI Paris, ING2 APP BDML 2, 2026–2027.
+Daniil Hirchyts and Mattéo Louet, EFREI Paris.
 
 ## License
 
