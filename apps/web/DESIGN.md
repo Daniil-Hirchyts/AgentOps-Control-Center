@@ -86,6 +86,16 @@ blue for live and interactive state, and a small set of graphic hues for avatars
 - Grid tracks are `minmax(0,1fr)` so long content truncates instead of blowing out the column. Full
   height uses `100dvh`; anchored scrolling leaves room for the header with `scroll-padding`.
 - Tables shed columns by priority as width drops; no horizontal page scroll at 320px.
+- Tables have no row rules. The table bleeds 12px past the content edge on both sides, so cell text
+  lines up with the page while the rounded row hover has room and is never clipped.
+- Forms do not scroll. A long form is split into two groups side by side in a wide dialog
+  (`md:max-w-4xl`); on a phone the same groups become two steps ("Step 1 of 2") with Continue and Back.
+  Related inputs join into one control (amount and currency). Short choices sit side by side.
+- Long lists show what matters first and say what is hidden: the contact list groups Online and
+  Offline, keeps anyone with unread messages or seen online this session on top, and shows five
+  offline people behind "Show n more". Searching always shows everyone.
+- Scrollbars are hidden everywhere. Every scroll area still scrolls with wheel, touch and keyboard,
+  and a sideways area says so on phones ("Swipe sideways to see the whole diagram.").
 
 ## 5. Motion (Emil + better-ui)
 
@@ -109,6 +119,19 @@ blue for live and interactive state, and a small set of graphic hues for avatars
 - Hover effects only under `@media (hover: hover) and (pointer: fine)` (Tailwind v4 `hover:` already does this).
 - `overscroll-behavior: contain` on scroll areas inside dialogs/drawers/chat.
 
+Animation inventory (each one passed the frequency / purpose / speed check):
+
+| Element | Motion | Why |
+| --- | --- | --- |
+| Sidebar hide / show | width 240ms `--ease-drawer`, content fades; the floating pill scales in from .96 with a 4px blur | The layout changes size, so show where it went |
+| Fresh approval in the inbox | `animate-row-in` once, only for approvals that arrived over the socket | A new item should be noticed |
+| Pipeline stages | node and connector colours ease over 200ms | State changes live while you watch |
+| Empty states | `animate-fade-up` (300ms, 12px, blur 4px) | Rare, softens a blank page |
+| Learn page headers | fade up with a 100ms stagger, first section last | Visited rarely, sets the reading order |
+| Diagrams | packets travel along links, steps light up in order, a pulse ring on live state changes | The motion is the explanation |
+
+Left still on purpose: nav active state, row hover, tab switches and anything started from the keyboard.
+
 ## 6. Accessibility (better-accessibility)
 
 - Native elements: `<button>` for actions, `<a href>`/`<Link>` for navigation, never clickable `<div>`/`<tr>` without a real link inside.
@@ -116,7 +139,11 @@ blue for live and interactive state, and a small set of graphic hues for avatars
 - Hit targets: ≥ 40×40 desktop where density allows, 44×44 on touch.
 - Every icon-only button has `aria-label`. Form fields have real `<label>`s; errors via `aria-invalid` + `aria-describedby`; validate on submit.
 - Live regions: new messages/toasts announced politely (`role="status"`), errors with `role="alert"` only when urgent.
-- Route change: update `document.title`.
+- Route change: update `document.title` and move focus to `<main id="main" tabIndex={-1}>` (not on
+  first load), so screen readers announce the new view.
+- A "Skip to content" link is the first focusable element and appears on focus.
+- Diagrams: parts are focusable buttons with `aria-pressed`; players are `role="toolbar"` with arrow
+  keys; the current step is announced from an `aria-live` caption; the traffic log is `role="log"`.
 - Reflow at 320px, 200% zoom without horizontal scroll.
 
 ## 7. Components
@@ -163,7 +190,7 @@ visuals read from it, so they cannot disagree.
 
 - Sidebar grouped as Work / Collaborate / Learn, active item a white pill. The connection status
   appears only when something is wrong; when connected it is a screen-reader-only label.
-- The sidebar can be hidden (button in its header, or `[`). When hidden, a floating vertical pill
+- The sidebar can be hidden (button in its header, or `[`), with the slide described in Motion. When hidden, a floating vertical pill
   keeps the show button, every nav item as an icon with a tooltip and badge dot, notifications and
   the user menu. The choice is remembered per browser.
 
@@ -172,6 +199,32 @@ visuals read from it, so they cannot disagree.
 `/learn/concept` explains what is simulated, who is involved, the four case scenarios and the life of
 a case. `/learn/architecture` explains the system: the map of devices, proxy, server, database and
 model; which channel (REST or WebSocket) carries what; sequence diagrams for a message, the approval
-loop and sign-in; and the run state machine. Diagrams are hand-placed SVG in `features/learn/diagrams.tsx`
+loop and sign-in; and the run state machine. Diagrams are hand-placed SVG in `features/learn/diagrams/`
 using the same tokens, with one line style per channel (REST solid ink, WebSocket dashed blue, SQL
 green, model dotted purple). They scroll sideways inside their frame on a phone.
+
+The diagrams are live and interactive:
+
+- **System map**: hover or focus a part to see what it does and dim everything unrelated; click to
+  pin it. Your own REST calls and socket frames (recorded by `stores/traffic.ts` from `lib/api.ts` and
+  the realtime provider) travel across the map as packets and fill a traffic log. "Replay a message"
+  and "Replay an approval" animate the two main flows. The people online are shown under the map.
+- **Sequences**: Play, pause, step with the arrow keys or click a step. The current arrow carries a
+  travelling dot and the actors involved are outlined.
+- **Run state machine**: pick a path (approved, rejected, no action, model fails) and play it. Each
+  state shows how many runs are in it right now; operators can click a state to open those runs.
+
+## 12. App icon
+
+A dark ink square (radius 9 of 32) with an open ring and a gold dot at its gap: a loop with a person
+at the point where it can be stopped. `components/shared/logo.tsx` draws it with theme tokens; the
+favicon, `apple-touch-icon.png`, `icon-512.png` (maskable) and `manifest.webmanifest` use the same shape.
+
+## 13. Writing (better-writing)
+
+- Errors say what failed and what to do next: "Unable to load this case. Check your connection, then
+  try again." Never "Something went wrong", "Could not", "Please" or "successfully".
+- Buttons start with a verb and name the result: "Create case", "Try again", "Show 12 more".
+- Placeholders show an example value, never the label again.
+- Plain words over jargon on screen; technical names (REST, WebSocket) only on the Learn pages.
+
