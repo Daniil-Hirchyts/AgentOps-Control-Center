@@ -48,8 +48,8 @@ src/
   (unknown types ignored). On (re)connect, users/conversations/runs/approvals/cases queries are invalidated.
 - **Messaging**: REST history + WS live updates, optimistic sends reconciled by `clientMessageId`,
   failure on `error` events / timeout / closed socket with retry, typing indicators, unread counters.
-- **Types**: all code imports DTOs from `src/lib/types.ts`. After `pnpm gen:api`, re-point those aliases to
-  `src/generated/api.ts`.
+- **Types**: shared API types are exported from `src/lib/types.ts`; the DTO aliases already reference
+  `src/generated/api.ts`. Run `pnpm gen:api` after updating the OpenAPI schema.
 
 ## Test ids used by E2E
 

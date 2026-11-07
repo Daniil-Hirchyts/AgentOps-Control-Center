@@ -5,7 +5,7 @@
 # AgentOps Control Center
 
 A human-in-the-loop control plane for agentic AI: the LLM agent recommends, a person approves from any device,
-and the action runs exactly once, with every step audited.
+and approved invoice updates are committed with an audit record.
 
 [Demo video](docs/demo/agentops-demo.mp4) · [What it shows](#what-this-project-shows) · [Workflow](#the-workflow) · [Engineering decisions](#engineering-decisions) · [Architecture](#architecture) · [Run it](#run-it)
 
@@ -18,37 +18,29 @@ backend traffic underneath. <a href="docs/demo/agentops-demo.mp4"><b>Watch the f
 
 ## Overview
 
-Companies want agentic AI that acts, not just answers, but an action with consequences (blocking a payment, changing
-a record) cannot be left to AI agents on their own. AgentOps is an end-to-end, full-stack system built around that
-problem: the LLM orchestration layer has an agent analyse a business case and propose a tool call with structured
-outputs, guardrails and policy run in the backend, a human-in-the-loop (HITL) reviewer decides in real time, and only
-then does the action run. It is the kind of enterprise workflow automation that gets deployed inside a customer's
-existing process, with AI governance and observability built in.
+AgentOps is an invoice-review application with an LLM recommendation step and a human approval gate.
+An operator submits an invoice; the model compares its amount with the vendor's recorded average and
+recommends either flagging it or taking no action. An assigned reviewer approves or rejects a proposed flag,
+with messaging available between the operator and reviewer.
 
-The use case is accounts-payable fraud review. An operator submits an invoice; the agent compares it with the vendor's
-history, assesses the risk and recommends flagging it; a reviewer gets the request on their phone, discusses it with
-the operator in the built-in chat, and approves or rejects. The data is synthetic; the patterns (approval gates,
-idempotent actions, audit trail, model-agnostic integration over OpenAI-compatible APIs) are the ones an enterprise
-deployment needs.
+The invoice data and accounts are synthetic. The application runs as a single server instance and supports
+both a deterministic mock model and an OpenAI-compatible model endpoint.
 
 ## What this project shows
 
-- **Production LLM integration.** A model-agnostic, provider-agnostic layer over any OpenAI-compatible API (local or
-  hosted), strict JSON-schema output with a fallback for servers that reject it, typed validation, bounded retries and
-  timeouts. A deterministic mock makes the whole system testable without a GPU or an API key.
-- **Guardrails outside the model.** The model only recommends, through a tool-calling pattern with structured outputs. Actions come from a fixed allowlist implemented in
-  Rust, the backend (not the model) decides what needs approval, and every failure path ends in `FAILED`, never in an
-  executed action.
-- **Human in the loop as a first-class state.** An eight-state run lifecycle with an explicit approval gate,
-  race-safe transitions, and live notifications to the assigned reviewer on any device.
-- **Safe side effects.** An approved action runs exactly once, even after a double click, a retry or a server
-  restart, enforced by the database. Interrupted runs are recovered at startup.
-- **Observability and AI governance.** Every run, model request and response, decision and action is recorded with
-  its actor and shown as an audit timeline; logs never contain secrets or tickets.
-- **Real-time product, not a demo script.** WebSocket presence, messaging with offline delivery, live status on
-  desktop and mobile, and a responsive React interface designed for daily use.
-- **Production hygiene.** Argon2id, short-lived JWTs, HttpOnly refresh cookie with rotation, single-use WebSocket
-  tickets, Origin checks, rate limits, OpenAPI 3.1, Docker Compose, CI, and tests at every level.
+- **Model integration.** Structured JSON output, typed validation, bounded retries and timeouts, plus a
+  fallback for model servers that reject the JSON-schema response format.
+- **Backend approval policy.** The model selects from a fixed action allowlist; the backend decides whether
+  approval is required. Model timeouts and invalid output stop the run before an invoice update.
+- **Approval workflow.** Eight run states, conditional database transitions and live reviewer notifications.
+- **Transactional invoice updates.** The case update and execution record share one PostgreSQL transaction.
+  A unique approval ID prevents duplicate updates when an execution is retried. Startup recovery resumes
+  approved runs and marks interrupted analysis runs as failed.
+- **Audit timeline.** Run transitions, model attempts, reviewer decisions and action results are recorded
+  in PostgreSQL and displayed in the interface.
+- **Messaging.** WebSocket presence, persisted messages, offline delivery and live status updates.
+- **Authentication and tooling.** Argon2id password hashes, JWT access tokens, rotating refresh cookies,
+  single-use WebSocket tickets, Origin checks, WebSocket message rate limits, OpenAPI, Docker Compose and CI.
 
 ## The workflow
 
@@ -85,7 +77,7 @@ flowchart LR
 | --- | --- |
 | The model returns a typed recommendation; Rust executes the action | The model can be wrong or manipulated by the invoice text; it can change a recommendation, never add an action |
 | Approval policy lives in the backend | The model's own `requiresApproval` field is ignored; sensitive actions always need a human |
-| `UNIQUE(approval_id)` on executions, inside the business transaction | Exactly-once execution without distributed locks; retries and restarts are safe |
+| `UNIQUE(approval_id)` on executions, inside the business transaction | The invoice update and its execution record commit together; the unique approval ID prevents duplicates |
 | Transitions as `UPDATE … WHERE status = expected` | Two concurrent actors cannot both move a run; the loser gets a clean `409` |
 | REST for commands and history, WebSocket for push | PostgreSQL stays the source of truth; a client that missed events just refetches |
 | OpenAI-compatible HTTP client instead of an SDK | One client for local servers (LM Studio) and hosted APIs; full control over retries and error classification |
