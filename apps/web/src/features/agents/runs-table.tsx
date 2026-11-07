@@ -2,6 +2,7 @@ import { RowLink, rowLinkClass } from '@/components/shared/row-link'
 import { RiskBadge, RunStatusBadge } from '@/components/shared/status'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import type { AgentRunDto } from '@/lib/types'
+import { PipelineTrack } from './pipeline-track'
 import { cn, formatDateTime, formatMoney, formatRelative } from '@/lib/utils'
 
 /** `compact` drops the risk column (used where the table shares the row with another section). */
@@ -22,9 +23,10 @@ export function RunsTable({
           <TableHead className={cn('w-16', showCase && 'hidden sm:table-cell')}>Run</TableHead>
           {showCase && <TableHead>Case</TableHead>}
           <TableHead>Status</TableHead>
+          <TableHead className="hidden lg:table-cell">Pipeline</TableHead>
           <TableHead className={riskCell}>Risk</TableHead>
-          <TableHead className="hidden text-right sm:table-cell">Amount</TableHead>
-          <TableHead className="hidden text-right sm:table-cell">Started</TableHead>
+          <TableHead className="hidden text-end sm:table-cell">Amount</TableHead>
+          <TableHead className="hidden text-end sm:table-cell">Started</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -49,13 +51,16 @@ export function RunsTable({
             <TableCell>
               <RunStatusBadge status={r.status} testId={`run-row-status-${r.id}`} />
             </TableCell>
+            <TableCell className="hidden lg:table-cell">
+              <PipelineTrack run={r} compact />
+            </TableCell>
             <TableCell className={riskCell}>
               {r.output ? <RiskBadge level={r.output.riskLevel} /> : <span className="text-text-tertiary">—</span>}
             </TableCell>
-            <TableCell className="hidden text-right tabular-nums sm:table-cell">
+            <TableCell className="hidden text-end tabular-nums sm:table-cell">
               {formatMoney(r.inputSnapshot.amount, r.inputSnapshot.currency)}
             </TableCell>
-            <TableCell className="hidden text-right text-13 text-text-secondary tabular-nums sm:table-cell" title={formatDateTime(r.createdAt)}>
+            <TableCell className="hidden text-end text-13 text-text-secondary tabular-nums sm:table-cell" title={formatDateTime(r.createdAt)}>
               {formatRelative(r.createdAt)}
             </TableCell>
           </TableRow>

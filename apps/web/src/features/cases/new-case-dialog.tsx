@@ -2,7 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useNavigate } from '@tanstack/react-router'
 import { Plus } from 'lucide-react'
 import { useState } from 'react'
-import { useForm } from 'react-hook-form'
+import { Controller, useForm, useWatch } from 'react-hook-form'
 import { toast } from 'sonner'
 import { CircularLoader } from '@/components/prompt-kit/loader'
 import { FormField } from '@/features/auth/form-field'
@@ -16,11 +16,14 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
+import { DatePicker } from '@/components/ui/date-picker'
 import { Input } from '@/components/ui/input'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { errorMessage } from '@/lib/api'
 import { useCreateCase } from './hooks'
-import { caseFormSchema, type CaseFormValues, emptyCaseForm, nextSample, toCreateCaseRequest } from './schema'
+import { CasePreview, ScenarioPicker } from './scenario-picker'
+import { caseFormSchema, type CaseFormValues, CURRENCIES, emptyCaseForm, nextSample, type ScenarioId, toCreateCaseRequest } from './schema'
 
 /**
  * `variant="primary"` is the page's one filled action; secondary placements (empty states) pass
@@ -34,14 +37,17 @@ export function NewCaseDialog({
   testId?: string
 } = {}) {
   const [open, setOpen] = useState(false)
+  const [scenario, setScenario] = useState<ScenarioId | null>(null)
   const navigate = useNavigate()
   const create = useCreateCase()
   const {
     register,
     handleSubmit,
     reset,
+    control,
     formState: { errors },
   } = useForm<CaseFormValues>({ resolver: zodResolver(caseFormSchema), defaultValues: emptyCaseForm })
+  const [amount, currency, historicalAverage] = useWatch({ control, name: ['amount', 'currency', 'historicalAverage'] })
 
   const onSubmit = handleSubmit(async (values) => {
     try {
@@ -49,6 +55,7 @@ export function NewCaseDialog({
       toast.success('Case created', { description: created.title })
       setOpen(false)
       reset(emptyCaseForm)
+      setScenario(null)
       void navigate({ to: '/operator/cases/$caseId', params: { caseId: String(created.id) } })
     } catch (err) {
       toast.error('Could not create case', { description: errorMessage(err) })
@@ -67,7 +74,10 @@ export function NewCaseDialog({
       open={open}
       onOpenChange={(o) => {
         setOpen(o)
-        if (!o) reset(emptyCaseForm)
+        if (!o) {
+          reset(emptyCaseForm)
+          setScenario(null)
+        }
       }}
     >
       <DialogTrigger asChild>
@@ -75,18 +85,34 @@ export function NewCaseDialog({
           <Plus strokeWidth={2} /> New case
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-2xl">
+      <DialogContent className="max-h-[calc(100dvh-2rem)] sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>New case</DialogTitle>
-          <DialogDescription>Enter the invoice to investigate. The agent will assess its risk when you run an analysis.</DialogDescription>
+          <DialogDescription>Start from a scenario or enter an invoice. The agent assesses its risk when you run an analysis.</DialogDescription>
         </DialogHeader>
         <form onSubmit={onSubmit} noValidate className="space-y-4" data-testid="new-case-form">
-          <p className="flex items-center justify-between gap-3 rounded-md bg-bg-subtle px-3 py-2 text-13 text-text-secondary">
-            Trying it out?
-            <Button type="button" variant="ghost" size="sm" className="-mr-1.5 text-accent-text" onClick={() => reset(nextSample())} data-testid="prefill-sample">
-              Fill with sample data
-            </Button>
-          </p>
+          <ScenarioPicker
+            value={scenario}
+            onPick={(sc) => {
+              setScenario(sc.id)
+              reset({ ...sc.values })
+            }}
+            aside={
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="-me-1.5 text-accent-text"
+                onClick={() => {
+                  setScenario(null)
+                  reset(nextSample())
+                }}
+                data-testid="prefill-sample"
+              >
+                Fill with sample data
+              </Button>
+            }
+          />
           <FormField id="case-title" label="Title" error={errors.title?.message}>
             <Input placeholder="Unusual consulting invoice" {...field('title')} />
           </FormField>
@@ -101,10 +127,42 @@ export function NewCaseDialog({
               <Input inputMode="decimal" placeholder="0.00" className="tabular-nums" {...field('amount')} />
             </FormField>
             <FormField id="case-currency" label="Currency" error={errors.currency?.message}>
-              <Input maxLength={3} className="uppercase" {...field('currency')} />
+              <Controller
+                control={control}
+                name="currency"
+                render={({ field: f }) => (
+                  <Select value={f.value} onValueChange={f.onChange}>
+                    <SelectTrigger id="case-currency" data-testid="case-currency" aria-invalid={!!errors.currency} className="w-full" onBlur={f.onBlur}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {CURRENCIES.map((c) => (
+                        <SelectItem key={c} value={c}>
+                          {c}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
             </FormField>
             <FormField id="case-issueDate" label="Issue date" error={errors.issueDate?.message}>
-              <Input type="date" {...field('issueDate')} />
+              <Controller
+                control={control}
+                name="issueDate"
+                render={({ field: f }) => (
+                  <DatePicker
+                    id="case-issueDate"
+                    testId="case-issueDate"
+                    value={f.value}
+                    onChange={f.onChange}
+                    onBlur={f.onBlur}
+                    invalid={!!errors.issueDate}
+                    disableFuture
+                    className="w-full"
+                  />
+                )}
+              />
             </FormField>
             <FormField
               id="case-historicalAverage"
@@ -118,6 +176,7 @@ export function NewCaseDialog({
           <FormField id="case-description" label="Description" error={errors.description?.message}>
             <Textarea rows={3} {...field('description')} />
           </FormField>
+          <CasePreview amount={amount} currency={currency} historicalAverage={historicalAverage} />
           <DialogFooter>
             <Button type="button" onClick={() => setOpen(false)}>
               Cancel

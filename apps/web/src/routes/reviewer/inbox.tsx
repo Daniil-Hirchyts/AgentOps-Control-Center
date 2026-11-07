@@ -1,16 +1,18 @@
 import { Link } from '@tanstack/react-router'
-import { ChevronRight } from 'lucide-react'
 import { useState } from 'react'
 import { AnimatedBackground } from '@/components/motion-primitives/animated-background'
 import { PageContainer } from '@/components/layout/app-shell'
 import { PageHeader } from '@/components/shared/page-header'
 import { EmptyState, ErrorState, ListSkeleton } from '@/components/shared/states'
-import { ApprovalStatusBadge, Dot } from '@/components/shared/status'
+import { DeviationMini, RiskGauge } from '@/components/shared/invoice-visuals'
+import { ApprovalStatusBadge } from '@/components/shared/status'
+import { runOfApproval } from '@/features/agents/pipeline'
+import { PipelineTrack } from '@/features/agents/pipeline-track'
 import { useApprovals } from '@/features/approvals/hooks'
 import { useDocumentTitle } from '@/lib/hooks'
-import { actionLabel, RISK } from '@/lib/labels'
+import { actionLabel } from '@/lib/labels'
 import type { ApprovalDto } from '@/lib/types'
-import { cn, deviation, formatDateTime, formatMoney, formatRelative } from '@/lib/utils'
+import { cn, formatDateTime, formatMoney, formatRelative } from '@/lib/utils'
 import { useRealtimeStore } from '@/stores/realtime'
 
 type Filter = 'pending' | 'decided' | 'all'
@@ -44,7 +46,7 @@ export function ReviewerInbox() {
         <AnimatedBackground
           value={filter}
           onValueChange={(id) => id && setFilter(id as Filter)}
-          className="rounded-md bg-surface shadow-elevated"
+          className="rounded-md bg-bg-surface shadow-border"
           transition={{ type: 'spring', bounce: 0, duration: 0.25 }}
         >
           {tabs.map(([value, label, n]) => (
@@ -68,12 +70,12 @@ export function ReviewerInbox() {
       </div>
 
       {approvals.isPending ? (
-        <ListSkeleton rows={4} className="divide-y border-y" />
+        <ListSkeleton rows={4} />
       ) : approvals.isError ? (
         <ErrorState error={approvals.error} onRetry={() => void approvals.refetch()} />
       ) : items.length === 0 ? (
         <EmptyState
-          className="border-t sm:items-start sm:text-left"
+          className="sm:items-start sm:text-start"
           title={filter === 'pending' ? 'You’re all caught up' : 'Nothing here yet'}
           description={
             filter === 'pending'
@@ -82,7 +84,7 @@ export function ReviewerInbox() {
           }
         />
       ) : (
-        <ul className="divide-y border-y" data-testid="approval-list">
+        <ul className="space-y-2" data-testid="approval-list">
           {items.map((a) => (
             <ApprovalRow key={a.id} approval={a} fresh={Boolean(fresh[a.id])} />
           ))}
@@ -94,8 +96,6 @@ export function ReviewerInbox() {
 
 function ApprovalRow({ approval: a, fresh }: { approval: ApprovalDto; fresh: boolean }) {
   const pending = a.status === 'PENDING'
-  const ratio = deviation(a.invoice)
-  const risk = RISK[a.riskLevel]
   return (
     <li>
       <Link
@@ -103,32 +103,28 @@ function ApprovalRow({ approval: a, fresh }: { approval: ApprovalDto; fresh: boo
         params={{ approvalId: String(a.id) }}
         data-testid={`approval-card-${a.id}`}
         data-fresh={fresh ? 'true' : 'false'}
-        className="group -mx-4 flex items-center gap-3 px-4 py-3.5 transition-colors duration-100 hover:bg-bg-subtle focus-visible:-outline-offset-2 sm:-mx-3 sm:rounded-md sm:px-3"
+        className={cn(
+          'group grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-4 gap-y-3 rounded-xl p-4 transition-[box-shadow,background-color] duration-150',
+          'shadow-border hover:shadow-border-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus',
+          'sm:grid-cols-[auto_minmax(0,1fr)_auto]',
+          pending ? 'bg-bg-surface' : 'bg-bg-subtle',
+        )}
       >
-        <div className="min-w-0 flex-1">
-          <div className="flex items-baseline justify-between gap-3">
-            <p className={cn('truncate text-sm', pending ? 'font-medium text-text' : 'text-text-secondary')} title={a.caseTitle}>
-              {fresh && (
-                <span className="mr-1.5 inline-block size-1.5 -translate-y-px rounded-full bg-accent-solid align-middle" aria-label="New" />
-              )}
-              {a.caseTitle}
-            </p>
-            <span className="shrink-0 text-sm font-medium tabular-nums">
-              {formatMoney(a.invoice.amount, a.invoice.currency)}
-            </span>
-          </div>
-          <div className="mt-1 flex items-center justify-between gap-3 text-13 text-text-secondary">
-            <span className="flex min-w-0 items-center gap-1.5">
-              <Dot tone={risk.tone} />
-              <span className="truncate">
-                {risk.label} · {actionLabel(a.proposedAction)}
-              </span>
-            </span>
-            <span className="shrink-0 tabular-nums">
-              {ratio !== null && ratio >= 1.5 ? `${ratio.toFixed(1)}× avg` : a.invoice.vendor}
-            </span>
-          </div>
-          <div className="mt-1 flex items-center justify-between gap-3 text-xs text-text-tertiary">
+        <div className="flex w-20 justify-center">
+          <RiskGauge level={a.riskLevel} size={64} className={cn(!pending && 'opacity-70')} />
+        </div>
+        <div className="min-w-0 space-y-1">
+          <p className={cn('truncate text-sm', pending ? 'font-medium text-text' : 'text-text-secondary')} title={a.caseTitle}>
+            {fresh && (
+              <span className="me-1.5 inline-block size-1.5 -translate-y-px rounded-full bg-accent-solid align-middle" aria-label="New" />
+            )}
+            {a.caseTitle}
+          </p>
+          <p className="truncate text-13 text-text-secondary">
+            {actionLabel(a.proposedAction)} · {a.invoice.vendor}
+          </p>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 pt-1 text-xs text-text-tertiary">
+            <PipelineTrack run={runOfApproval(a)} compact />
             <span className="truncate">
               From {a.requestedByUsername} ·{' '}
               <time dateTime={a.createdAt} title={formatDateTime(a.createdAt)} className="tabular-nums">
@@ -138,7 +134,10 @@ function ApprovalRow({ approval: a, fresh }: { approval: ApprovalDto; fresh: boo
             {!pending && <ApprovalStatusBadge status={a.status} className="text-xs text-text-secondary" />}
           </div>
         </div>
-        <ChevronRight className="size-4 shrink-0 text-text-tertiary" strokeWidth={1.5} aria-hidden />
+        <div className="col-span-2 flex items-center justify-between gap-4 sm:col-span-1 sm:flex-col sm:items-end sm:gap-1.5">
+          <span className="text-base font-semibold tracking-[-0.01em] tabular-nums">{formatMoney(a.invoice.amount, a.invoice.currency)}</span>
+          <DeviationMini invoice={a.invoice} />
+        </div>
       </Link>
     </li>
   )

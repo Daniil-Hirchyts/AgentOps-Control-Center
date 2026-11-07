@@ -1,7 +1,8 @@
 import { PageContainer } from '@/components/layout/app-shell'
 import { PageHeader } from '@/components/shared/page-header'
 import { EmptyState, ErrorState, RowsSkeleton } from '@/components/shared/states'
-import { NativeSelect } from '@/components/ui/native-select'
+import { Dot } from '@/components/shared/status'
+import { Select, SelectContent, SelectItem, SelectSeparator, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useRuns } from '@/features/agents/hooks'
 import { RunsTable } from '@/features/agents/runs-table'
 import { useDocumentTitle } from '@/lib/hooks'
@@ -24,19 +25,23 @@ export function RunsPage({
         meta={runs.data ? <span className="tabular-nums">{runs.data.total} agent analyses</span> : null}
         actions={
           <div className="w-48">
-            <NativeSelect
-              aria-label="Filter by status"
-              data-testid="run-status-filter"
-              value={status ?? ''}
-              onChange={(e) => onStatusChange((e.target.value || undefined) as RunStatus | undefined)}
-            >
-              <option value="">All statuses</option>
-              {RUN_STATUSES.map((s) => (
-                <option key={s} value={s}>
-                  {RUN_STATUS[s].label}
-                </option>
-              ))}
-            </NativeSelect>
+            <Select value={status ?? 'all'} onValueChange={(v) => onStatusChange(v === 'all' ? undefined : (v as RunStatus))}>
+              <SelectTrigger aria-label="Filter by status" data-testid="run-status-filter" className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All statuses</SelectItem>
+                <SelectSeparator />
+                {RUN_STATUSES.map((s) => (
+                  <SelectItem key={s} value={s} data-testid={`run-status-option-${s}`}>
+                    <span className="flex items-center gap-2">
+                      <Dot tone={RUN_STATUS[s].tone} />
+                      {RUN_STATUS[s].label}
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         }
       />

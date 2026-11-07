@@ -1,13 +1,17 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { CircularLoader } from '@/components/prompt-kit/loader'
 import { PageContainer } from '@/components/layout/app-shell'
-import { InvoiceDetails } from '@/components/shared/invoice-details'
+import { InvoiceSheet } from '@/components/shared/invoice-visuals'
+import { SystemMessage } from '@/components/prompt-kit/system-message'
+import { Evidence, ReasoningChain } from '@/features/agents/analysis'
+import { runOfApproval } from '@/features/agents/pipeline'
+import { PipelineFigure } from '@/features/agents/pipeline-figure'
 import { BackLink, MetaDot, PageHeader, Section } from '@/components/shared/page-header'
 import { ErrorState } from '@/components/shared/states'
-import { ApprovalStatusBadge, RiskBadge } from '@/components/shared/status'
+import { ApprovalStatusBadge } from '@/components/shared/status'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -26,7 +30,7 @@ import { useDocumentTitle } from '@/lib/hooks'
 import { ACTION_EXPLANATION, actionLabel } from '@/lib/labels'
 import { qk } from '@/lib/query-keys'
 import type { DecisionRequest } from '@/lib/types'
-import { deviation, formatDateTime, formatMoney, formatRelative } from '@/lib/utils'
+import { formatDateTime, formatRelative } from '@/lib/utils'
 import { useAuthStore } from '@/stores/auth'
 import { useRealtimeStore } from '@/stores/realtime'
 
@@ -88,7 +92,6 @@ export function ApprovalDetailPage({ approvalId }: { approvalId: number }) {
   const isAssignee = me?.id === a.reviewerId
   const decided = a.status !== 'PENDING'
   const canDecide = isAssignee && !decided && !decide.isPending
-  const ratio = deviation(a.invoice)
 
   const confirm = async () => {
     if (!pendingDecision) return
@@ -145,44 +148,42 @@ export function ApprovalDetailPage({ approvalId }: { approvalId: number }) {
         }
       />
 
-      {/* The proposal: what will happen, and the one number that matters. */}
-      <section className="mb-10 rounded-lg bg-bg-subtle p-4 sm:p-5" aria-labelledby="proposal-title">
-        <p className="text-13 text-text-secondary">The agent proposes</p>
-        <h2 id="proposal-title" className="mt-0.5 text-base font-semibold">
-          {actionLabel(a.proposedAction)}
-        </h2>
-        <p className="mt-1 text-13 text-text-secondary">{ACTION_EXPLANATION[a.proposedAction]}</p>
-        <dl className="mt-4 flex flex-wrap gap-x-8 gap-y-3 border-t pt-4">
-          <Stat label="Amount">{formatMoney(a.invoice.amount, a.invoice.currency)}</Stat>
-          {ratio !== null && <Stat label="Vs. average">{ratio.toFixed(1)}×</Stat>}
-          <Stat label="Risk">
-            <RiskBadge level={a.riskLevel} className="text-base font-semibold" />
-          </Stat>
-        </dl>
+      {/* The proposal: what will happen, and the evidence it rests on. */}
+      <section className="surface mb-6 space-y-6 rounded-xl p-4 sm:p-6" aria-labelledby="proposal-title">
+        <div>
+          <p className="text-13 text-text-secondary">The agent proposes</p>
+          <h2 id="proposal-title" className="mt-0.5 text-lg font-semibold tracking-[-0.01em]">
+            {actionLabel(a.proposedAction)}
+          </h2>
+          <p className="mt-1 max-w-prose text-13 text-text-secondary">{ACTION_EXPLANATION[a.proposedAction]}</p>
+        </div>
+        <Evidence invoice={a.invoice} risk={a.riskLevel} />
       </section>
+
+      <PipelineFigure run={runOfApproval(a)} className="mb-10" />
 
       <div className="space-y-10">
         <Section title="Agent reasoning">
-          <p className="max-w-prose text-sm leading-relaxed whitespace-pre-wrap" data-testid="approval-reasoning">
-            {a.reasoningSummary}
-          </p>
+          <div data-testid="approval-reasoning">
+            <ReasoningChain invoice={a.invoice} action={a.proposedAction} summary={a.reasoningSummary} />
+          </div>
         </Section>
 
         {decided && (
           <Section title="Decision" aside={<ApprovalStatusBadge status={a.status} />} data-testid="decision-summary">
-            <p className="text-sm">
-              {a.status === 'APPROVED' ? 'Approved' : 'Rejected'}
-              {a.decidedBy === a.reviewerId ? ` by ${a.reviewerUsername}` : ''}{' '}
-              <span className="text-text-secondary tabular-nums">{formatDateTime(a.decidedAt)}</span>
-            </p>
-            <p className="mt-1 text-sm text-text-secondary">
-              {a.decisionReason ? `“${a.decisionReason}”` : 'No reason given.'}
-            </p>
+            <SystemMessage variant={a.status === 'APPROVED' ? 'success' : 'error'}>
+              <p>
+                {a.status === 'APPROVED' ? 'Approved' : 'Rejected'}
+                {a.decidedBy === a.reviewerId ? ` by ${a.reviewerUsername}` : ''}{' '}
+                <span className="tabular-nums opacity-80">{formatDateTime(a.decidedAt)}</span>
+              </p>
+              <p className="mt-0.5 opacity-80">{a.decisionReason ? `“${a.decisionReason}”` : 'No reason given.'}</p>
+            </SystemMessage>
           </Section>
         )}
 
         <Section title="Invoice">
-          <InvoiceDetails invoice={a.invoice} />
+          <InvoiceSheet invoice={a.invoice} />
         </Section>
       </div>
 
@@ -244,7 +245,7 @@ export function ApprovalDetailPage({ approvalId }: { approvalId: number }) {
               aria-describedby="decision-reason-count"
               data-testid="decision-reason"
             />
-            <p id="decision-reason-count" className="text-right text-xs text-text-tertiary tabular-nums">
+            <p id="decision-reason-count" className="text-end text-xs text-text-tertiary tabular-nums">
               {reason.length}/{MAX_REASON}
             </p>
           </div>
@@ -268,11 +269,4 @@ export function ApprovalDetailPage({ approvalId }: { approvalId: number }) {
   )
 }
 
-function Stat({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <div>
-      <dt className="text-13 text-text-secondary">{label}</dt>
-      <dd className="text-base font-semibold tabular-nums">{children}</dd>
-    </div>
-  )
-}
+/** The approval as the slice of a run the pipeline model needs. */

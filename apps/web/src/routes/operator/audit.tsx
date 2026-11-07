@@ -3,7 +3,7 @@ import { PageContainer } from '@/components/layout/app-shell'
 import { PageHeader } from '@/components/shared/page-header'
 import { EmptyState, ErrorState, RowsSkeleton } from '@/components/shared/states'
 import { Dot } from '@/components/shared/status'
-import { NativeSelect } from '@/components/ui/native-select'
+import { Select, SelectContent, SelectItem, SelectSeparator, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { useRuns } from '@/features/agents/hooks'
 import { useAuditEvents } from '@/features/audit/hooks'
@@ -31,19 +31,23 @@ export function AuditPage({
         meta="Append-only record of every agent step and human decision."
         actions={
           <div className="w-64 max-w-full">
-            <NativeSelect
-              aria-label="Filter by run"
-              data-testid="audit-run-filter"
-              value={agentRunId ?? ''}
-              onChange={(e) => onRunChange(e.target.value ? Number(e.target.value) : undefined)}
+            <Select
+              value={agentRunId ? String(agentRunId) : 'all'}
+              onValueChange={(v) => onRunChange(v === 'all' ? undefined : Number(v))}
             >
-              <option value="">All runs</option>
-              {(runs.data?.items ?? []).map((r) => (
-                <option key={r.id} value={r.id}>
-                  #{r.id} · {r.caseTitle}
-                </option>
-              ))}
-            </NativeSelect>
+              <SelectTrigger aria-label="Filter by run" data-testid="audit-run-filter" className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="max-h-80">
+                <SelectItem value="all">All runs</SelectItem>
+                <SelectSeparator />
+                {(runs.data?.items ?? []).map((r) => (
+                  <SelectItem key={r.id} value={String(r.id)}>
+                    <span className="font-mono text-text-tertiary tabular-nums">#{r.id}</span> {r.caseTitle}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         }
       />
