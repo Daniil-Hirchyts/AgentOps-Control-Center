@@ -94,9 +94,9 @@
   <text x="300" y="589" text-anchor="middle" class="small">approvals · action_executions · audit_events</text>
 
   <rect x="620" y="530" width="296" height="66" rx="8" class="llm"/>
-  <text x="768" y="556" text-anchor="middle" class="title">LM Studio (host)</text>
-  <text x="768" y="575" text-anchor="middle" class="small">OpenAI-compatible, localhost:1234/v1</text>
-  <text x="768" y="589" text-anchor="middle" class="small">never exposed publicly</text>
+  <text x="768" y="556" text-anchor="middle" class="title">LLM provider</text>
+  <text x="768" y="575" text-anchor="middle" class="small">any OpenAI-compatible API, or mock</text>
+  <text x="768" y="589" text-anchor="middle" class="small">called only by the server</text>
 
   <path d="M300,486 L300,528" class="edge2"/>
   <text x="310" y="512" class="small">SQLx pool (source of truth)</text>

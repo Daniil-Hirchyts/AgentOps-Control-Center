@@ -264,6 +264,15 @@ open http://localhost:8080
   DNS name, ports 80/443 published (`WEB_PORT=80 WEB_HTTPS_PORT=443`), and `COOKIE_SECURE=true`.
 - Ports can be moved when they clash with a host setup: `POSTGRES_PORT`, `WEB_PORT`, `WEB_HTTPS_PORT`.
 
+| Service | Image | Role |
+|---|---|---|
+| `postgres` | postgres:17-alpine | database, published on `127.0.0.1:${POSTGRES_PORT:-5432}` |
+| `backend` | `infra/docker/backend.Dockerfile` | Rust API + WebSocket, migrations at startup, internal only |
+| `seed` | same image | one-shot, idempotent demo data (`SEED_DEMO_DATA=false` to skip) |
+| `web` | `infra/docker/web.Dockerfile` | Caddy: React build + reverse proxy for `/api` and `/ws`, port `WEB_PORT` (8080) |
+| `backend-test` (profile `test`) | rust:1-bookworm | `cargo test` against the compose PostgreSQL |
+| `e2e` (profile `test`) | `infra/docker/e2e.Dockerfile` | Playwright runner targeting `http://web` |
+
 ### Tests in containers (profile `test`)
 
 ```bash
