@@ -1,0 +1,14 @@
+{
+  "name": "AgentOps",
+  "short_name": "AgentOps",
+  "description": "Instant messaging with a human-approved AI agent.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#fbfaf9",
+  "theme_color": "#fbfaf9",
+  "icons": [
+    { "src": "/favicon.svg", "type": "image/svg+xml", "sizes": "any" },
+    { "src": "/apple-touch-icon.png", "type": "image/png", "sizes": "180x180" },
+    { "src": "/icon-512.png", "type": "image/png", "sizes": "512x512", "purpose": "any maskable" }
+  ]
+}
