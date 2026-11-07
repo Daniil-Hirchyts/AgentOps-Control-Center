@@ -1,200 +1,137 @@
+<div align="center">
+
+<img src="apps/web/public/favicon.svg" alt="AgentOps icon" width="96"/>
+
 # AgentOps Control Center
 
-A platform for supervising and validating AI agents (university project, course *API and Web Services*).
-An AI agent carries out tasks, asks for validation when an action is sensitive, and an operator and a reviewer discuss it in
-real time to authorize or reject the action.
+Instant messaging between two devices, extended into a console where people approve what an AI agent wants to do.
 
-Concepts: agentic AI, human-in-the-loop, tool calling, observability, WebSocket.
+[Report (FR)](docs/report/rapport.pdf) · [Architecture](docs/architecture.md) · [API](docs/api.md) · [Assignment coverage](#assignment-coverage) · [Run it](#run-it)
+
+<img src="docs/screenshots/demo-two-devices.png" alt="The same conversation open on a laptop as Alice and on a phone as Bob" width="960"/>
+
+<sub>Alice on a laptop and Bob on a phone: two independent sessions exchanging messages through the server, on synthetic data.</sub>
+
+</div>
+
+## About
+
+The assignment asks for an instant-messaging API between two devices: accounts, JWT login, a user list, messages over
+WebSocket and history over REST. AgentOps builds that, then uses it for a concrete job: supervising an AI agent.
 
 - **Agents and approvals:** an operator submits an invoice; an agent (any OpenAI-compatible model, or a deterministic
   mock) assesses the risk and proposes an action through a tool call; a reviewer approves or rejects it in real time
   from another device; the approved action is executed exactly once and every step is audited.
-- **Real-time collaboration:** accounts, JWT login, user list with live presence, messages over WebSocket with
-  history over REST, offline recipients and a typing indicator, so the operator and the reviewer can talk the
-  decision over. Demonstrated between a laptop and a phone.
+- **Real-time collaboration:** live presence, messages with offline delivery and a typing indicator, so the operator
+  and the reviewer can talk the decision over.
 - **Learn pages in the app:** `/learn/concept` explains what is simulated and what each demo case is for;
-  `/learn/architecture` walks through the servers, REST vs WebSocket and the approval loop with diagrams.
+  `/learn/architecture` walks through the servers, REST vs WebSocket and the approval loop with live diagrams.
+
+This is an MVP. The invoice case is simulated, the model is a mock by default, there are two fixed roles and a single
+server instance; these simplifications are deliberate and listed in the report.
 
 Stack: Rust (Axum, Tokio, SQLx) · PostgreSQL 17 · React + Vite + TypeScript · Docker Compose · Caddy.
 
+## Assignment coverage
+
+| Requirement | Implementation |
+| --- | --- |
+| Account creation | `POST /api/comptes`, Argon2id hashing, database constraints |
+| JWT authentication | `POST /api/auth/login`, Bearer access token, HttpOnly refresh cookie |
+| User list | `GET /api/utilisateurs`, with a live `online` flag |
+| Real-time messages over WebSocket | `/ws/messages`, delivered to the recipient and echoed to the sender |
+| History over REST | `GET /api/messages/{utilisateurId}` |
+| Offline recipient | messages stored before delivery, refetched over REST on reconnect |
+| WebSocket security | short-lived ticket, Origin check, frame size and rate limits |
+| Persistence | PostgreSQL, migrations embedded in the binary |
+| Two-device demo | laptop and phone on the same Wi-Fi, [script](docs/development.md#6-two-device-demo) |
+| Bonus | OpenAPI / Swagger UI, typing indicator, WebSocket rate limiting |
+| Extension | AI agent with human approval, state machine, exactly-once execution, audit trail |
+| Tests | backend integration tests, frontend tests, two-browser Playwright E2E |
+
+## How it works
+
 ![Architecture](docs/architecture.svg)
 
-## Rubric mapping
+Both devices talk only to the server, never to each other. REST carries reads and commands (login, history, cases,
+decisions); the WebSocket pushes what just happened (messages, presence, run status). PostgreSQL is the single source of
+truth. An agent run follows this loop:
 
-| Criterion | Where it is implemented |
-|---|---|
-| Account creation | `POST /api/comptes`, Argon2id hashing, DB constraints (`backend/migrations/`) |
-| JWT authentication | `POST /api/auth/login`, Bearer access token, HttpOnly refresh cookie, `401` handling |
-| User list | `GET /api/utilisateurs` (JSON array, live `online` flag) |
-| Real-time messaging over WebSocket | `/ws/messages?ticket=…`, message events to recipient + echo to sender |
-| Message history over REST | `GET /api/messages/{utilisateurId}` with `limit` / `beforeId` |
-| Offline recipients | messages persisted before delivery, refetched over REST on reconnect |
-| Presence | in-memory connection registry, `user_presence` events |
-| WebSocket security | short-lived WS ticket, Origin check, frame size and rate limits |
-| Persistence | PostgreSQL, SQLx, embedded migrations |
-| Two-device demo | [`docs/development.md` §6](docs/development.md#6-two-device-demo) |
-| Bonus: OpenAPI / Swagger | Utoipa, `/api/openapi.json`, `/api/docs` |
-| Bonus: typing indicator, WS rate limiting | `typing` events, 10 msgs / 5 s per connection |
-| Extension: AI agent + HITL | `/api/cases`, `/api/agent-runs`, `/api/approvals`, state machine, exactly-once execution |
-| Audit trail | `/api/audit-events`, `audit_events` table |
-| Tests | backend integration tests, frontend tests, Playwright two-context E2E, CI |
-| Documentation / report | [`docs/`](docs/), French report [`docs/report/rapport.pdf`](docs/report/rapport.pdf) |
+```mermaid
+flowchart LR
+    O[Operator submits<br/>an invoice] --> A[Agent analyses it]
+    A -->|no action| C[Completed]
+    A -->|error or invalid output| F[Failed]
+    A -->|flag the invoice| G{Reviewer<br/>approves?}
+    G -->|yes| X[Action executed<br/>exactly once]
+    G -->|no| R[Cancelled,<br/>nothing executed]
+    X --> C
+```
 
-## Prerequisites
+Every transition is written to the audit log and pushed to both people over the WebSocket. Details, data model and
+security model: [`docs/architecture.md`](docs/architecture.md).
 
-- Rust 1.92+ (edition 2024)
-- Node.js 24+ and pnpm 9
-- Docker Desktop (the Docker quick start needs nothing else)
-- Optional: an OpenAI-compatible LLM (real mode), `jq`, `websocat`
+## Run it
 
-## Quick start (Docker, everything)
+Docker Desktop is enough for the full stack:
 
 ```bash
 cp .env.example .env               # then set JWT_SECRET (openssl rand -base64 48)
 docker compose up --build          # postgres + backend + demo seed + web
 ```
 
-Open <http://localhost:8080> (Swagger at <http://localhost:8080/api/docs>). From a phone on the same Wi-Fi, open
-`http://<laptop-LAN-IP>:8080`. Tests run in containers too:
+Open <http://localhost:8080> (Swagger UI at `/api/docs`). From a phone on the same Wi-Fi, open
+`http://<laptop-LAN-IP>:8080`.
 
-```bash
-docker compose --profile test run --rm backend-test   # Rust unit + integration tests
-docker compose --profile test run --rm e2e            # Playwright, against the running stack
-```
+Demo accounts (synthetic), password `demo-password-123` for all:
 
-## Quick start (host development, hot reload)
+| Username | Role |
+| --- | --- |
+| alice, carol | OPERATOR |
+| bob, dave | REVIEWER |
+
+### Host development, hot reload
+
+Needs Rust 1.92+, Node.js 24+ and pnpm 9.
 
 ```bash
 docker compose up -d postgres
-cp .env.example .env
-openssl rand -base64 48            # paste the output as JWT_SECRET in .env
+cp .env.example .env               # set JWT_SECRET
 cd backend && cargo run            # terminal 1: API on :8080, runs migrations
 cd backend && cargo run --bin seed # terminal 2: demo users
 cd apps/web && pnpm install && pnpm dev   # terminal 3: http://localhost:5173
 ```
 
-Open <http://localhost:5173> and log in with one of the demo accounts.
-
-### Demo accounts
-
-Synthetic test data created by `cargo run --bin seed` (or automatically by the `seed` container). Password for all: `demo-password-123`.
-
-| Username | Role |
-|---|---|
-| alice, carol | OPERATOR |
-| bob, dave | REVIEWER |
-
-### API documentation
-
-- Swagger UI: <http://localhost:8080/api/docs> or through the Vite proxy <http://localhost:5173/api/docs>
-- OpenAPI JSON: <http://localhost:8080/api/openapi.json> (committed copy in `contracts/openapi/`)
-- Reference with curl / websocat examples: [`docs/api.md`](docs/api.md)
-
-## Project structure
-
-```
-.
-├── backend/                 Rust API (binary `agentops`, plus `seed` and `export_openapi`)
-│   ├── migrations/          SQL migrations (embedded at compile time)
-│   └── src/
-├── apps/web/                React + Vite SPA
-├── contracts/               CONTRACT.md (API/WS/state machine source of truth), OpenAPI
-├── tests/e2e/               Playwright end-to-end tests (two browser contexts)
-├── infra/
-│   ├── docker/              backend, web and e2e Dockerfiles
-│   └── caddy/Caddyfile      SPA + reverse proxy for /api and /ws
-├── docs/                    architecture, API, development guide, French report
-├── .github/workflows/ci.yml backend, frontend and e2e jobs
-└── docker-compose.yml       postgres, backend, seed, web (+ backend-test, e2e in profile "test")
-```
-
-## Environment variables
-
-All variables live in `.env` (copy from `.env.example`). Full descriptions in
-[`docs/development.md`](docs/development.md#3-environment-variables).
-
-| Variable | Default | Purpose |
-|---|---|---|
-| `DATABASE_URL` | `postgres://agentops:agentops@localhost:5432/agentops` | PostgreSQL connection |
-| `BIND_ADDR` | `0.0.0.0:8080` | backend listen address |
-| `ALLOWED_ORIGINS` | `http://localhost:5173,http://127.0.0.1:5173` | extra allowed origins (same-host always allowed) |
-| `JWT_SECRET` | placeholder | HS256 key, ≥ 32 bytes, **change it** |
-| `ACCESS_TOKEN_TTL_SECONDS` | `900` | access token lifetime |
-| `REFRESH_TOKEN_TTL_SECONDS` | `604800` | refresh cookie lifetime |
-| `WS_TICKET_TTL_SECONDS` | `30` | WebSocket ticket lifetime |
-| `COOKIE_SECURE` | `false` | `true` only behind HTTPS |
-| `LLM_MODE` | `mock` | `mock` or `real` |
-| `LLM_BASE_URL` | `http://localhost:1234/v1` | OpenAI-compatible endpoint (LM Studio by default) |
-| `LLM_API_KEY` | empty | API key, for hosted providers |
-| `LLM_MODEL` | empty | model id, empty = first available |
-| `LLM_TIMEOUT_SECONDS` | `120` | LLM request timeout |
-| `RUST_LOG` | `agentops=info,tower_http=info` | log filter |
-
-## Testing
+### Tests
 
 ```bash
-cd backend && cargo fmt --all -- --check && cargo clippy --all-targets -- -D warnings && cargo test
-cd apps/web && pnpm typecheck && pnpm lint && pnpm test && pnpm build
-# E2E: backend running (LLM_MODE=mock) and seeded, frontend on :5173
-cd tests/e2e && pnpm install && pnpm exec playwright install chromium && pnpm exec playwright test
+cd backend && cargo test
+cd apps/web && pnpm typecheck && pnpm lint && pnpm test
+cd tests/e2e && pnpm install && pnpm exec playwright test   # backend (LLM_MODE=mock) and frontend running
 ```
 
-CI (`.github/workflows/ci.yml`) runs the same checks on every push and pull request, with a PostgreSQL service
-container, and uploads the Playwright report as an artifact.
+Or in containers: `docker compose --profile test run --rm backend-test` and `... run --rm e2e`.
 
-## Two-device demo
+The [development guide](docs/development.md) covers the
+[environment variables](docs/development.md#3-environment-variables), a
+[real LLM](docs/development.md#4-real-llm-mode), the [Docker services](docs/development.md#7-docker-full-stack) and
+[troubleshooting](docs/development.md#8-troubleshooting).
 
-Laptop and phone on the same Wi-Fi, `pnpm dev --host`, open `http://<laptop-LAN-IP>:5173` on the phone.
-Step-by-step script (messaging, approval, rejection, reconnection):
-[`docs/development.md` §6](docs/development.md#6-two-device-demo).
+## Repository layout
 
-## Real LLM
+| Path | Contents |
+| --- | --- |
+| [`backend/`](backend) | Rust API and WebSocket server, SQL migrations; [its README](backend/README.md) maps the modules |
+| [`apps/web/`](apps/web) | React single-page app; [design rules](apps/web/DESIGN.md) |
+| [`contracts/`](contracts) | [`CONTRACT.md`](contracts/CONTRACT.md), the API, WebSocket and state machine contract, and the OpenAPI file |
+| [`tests/e2e/`](tests/e2e) | Playwright tests with two browser contexts |
+| [`infra/`](infra) | Dockerfiles and the Caddy configuration |
+| [`docs/`](docs) | [Architecture](docs/architecture.md), [API reference](docs/api.md), [development guide](docs/development.md) |
+| [`docs/report/`](docs/report) | French report: [PDF](docs/report/rapport.pdf) and LaTeX source |
 
-Any OpenAI-compatible API works: a local server such as LM Studio, or a hosted provider.
+## Authors
 
-1. Use an instruct model that handles JSON output.
-2. In `.env`: `LLM_MODE=real`, `LLM_BASE_URL`, and `LLM_API_KEY` / `LLM_MODEL` if the provider needs them; restart
-   the backend.
-3. Check `GET /api/health` and `GET /api/llm/models`.
-
-LLM failures (server down, timeout, invalid output after 2 attempts) put the run in `FAILED`; nothing is ever
-approved or executed automatically. A local server should stay on localhost.
-
-## Docker details
-
-| Service | Image | Role |
-|---|---|---|
-| `postgres` | postgres:17-alpine | database, published on `127.0.0.1:${POSTGRES_PORT:-5432}` |
-| `backend` | `infra/docker/backend.Dockerfile` | Rust API + WebSocket, migrations at startup, internal only |
-| `seed` | same image | one-shot, idempotent demo data (`SEED_DEMO_DATA=false` to skip) |
-| `web` | `infra/docker/web.Dockerfile` | Caddy: React build + reverse proxy for `/api` and `/ws`, port `WEB_PORT` (8080) |
-| `backend-test` (profile `test`) | rust:1-bookworm | `cargo test` against the compose PostgreSQL |
-| `e2e` (profile `test`) | `infra/docker/e2e.Dockerfile` | Playwright runner targeting `http://web` |
-
-Set `SITE_ADDRESS` to a public domain for automatic HTTPS (then also `COOKIE_SECURE=true`). The containerised backend
-reaches a local LLM server via `host.docker.internal`; running the backend on the host is simpler, see [`docs/development.md` §7](docs/development.md#local-llm-from-inside-docker).
-
-## Troubleshooting
-
-| Problem | Fix |
-|---|---|
-| Backend cannot connect to the database | `docker compose up -d postgres`; check `DATABASE_URL` |
-| Logged out after every reload | `COOKIE_SECURE=true` on plain HTTP; set `false` |
-| WebSocket disconnected, upgrade 403 | add the page origin to `ALLOWED_ORIGINS` |
-| Phone cannot reach the laptop | same Wi-Fi without client isolation, `pnpm dev --host`, allow `node` in the macOS firewall |
-| Agent runs always `FAILED` | LLM server unreachable / no model loaded / wrong `LLM_MODEL`; try `LLM_MODE=mock` |
-| Port 8080 busy | a host backend is running; stop it or set `WEB_PORT=8088` |
-
-More in [`docs/development.md`](docs/development.md#8-troubleshooting).
-
-## Documentation
-
-- [`docs/architecture.md`](docs/architecture.md): components, REST vs WS, data model, state machine, HITL sequence,
-  security model
-- [`docs/api.md`](docs/api.md): endpoint reference with examples
-- [`docs/development.md`](docs/development.md): setup, LLM, tests, two-device demo
-- [`docs/report/rapport.pdf`](docs/report/rapport.pdf): written report (French, LaTeX source in `docs/report/rapport.tex`)
-- [`contracts/CONTRACT.md`](contracts/CONTRACT.md): API contract (source of truth)
+Daniil Hirchyts and Mattéo Louet, for API et Web Services at EFREI Paris, ING2 APP BDML 2, 2026–2027.
 
 ## License
 
