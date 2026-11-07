@@ -237,8 +237,8 @@ This writes `desktop-messaging.png`, `mobile-messaging.png`, `desktop-run-awaiti
 `desktop-concept.png`, `desktop-architecture.png` and `swagger-ui.png` into
 `docs/screenshots/`.
 
-The report figures `demo-two-devices.png`, `mockup-run-awaiting-approval.png` and `mockup-approval-detail.png` are
-the same screens captured at MacBook Pro 14" (1512×982 @2x) and iPhone 18 Pro (402×874 @3x) resolutions and placed in
+The report figures `demo-two-devices.png` and `mockup-*.png` (agent run, approval detail, Concept and Architecture
+pages) are the same screens captured at MacBook Pro 14" (1512×982 @2x) and iPhone 18 Pro (402×874 @3x) resolutions and placed in
 Apple's product bezels (Apple Design Resources, not stored in the repository).
 
 The report itself is LaTeX, in `docs/report/`:

@@ -6,7 +6,7 @@ real time to authorize or reject the action.
 
 Concepts: agentic AI, human-in-the-loop, tool calling, observability, WebSocket.
 
-- **Agents and approvals:** an operator submits an invoice; an agent (LM Studio or a deterministic mock) assesses the
+- **Agents and approvals:** an operator submits an invoice; an agent (any OpenAI-compatible model, LM Studio by default, or a deterministic mock) assesses the
   risk and proposes an action through a tool call; a reviewer approves or rejects it in real time from another device;
   the approved action is executed exactly once and every step is audited.
 - **Real-time collaboration:** accounts, JWT login, user list with live presence, messages over WebSocket with
@@ -125,7 +125,7 @@ All variables live in `.env` (copy from `.env.example`). Full descriptions in
 | `WS_TICKET_TTL_SECONDS` | `30` | WebSocket ticket lifetime |
 | `COOKIE_SECURE` | `false` | `true` only behind HTTPS |
 | `LLM_MODE` | `mock` | `mock` or `real` |
-| `LLM_BASE_URL` | `http://localhost:1234/v1` | LM Studio endpoint |
+| `LLM_BASE_URL` | `http://localhost:1234/v1` | OpenAI-compatible endpoint (LM Studio by default) |
 | `LLM_MODEL` | empty | model id, empty = first available |
 | `LLM_TIMEOUT_SECONDS` | `120` | LLM request timeout |
 | `RUST_LOG` | `agentops=info,tower_http=info` | log filter |
