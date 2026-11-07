@@ -39,7 +39,7 @@ Stack: Rust (Axum, Tokio, SQLx, Utoipa, Argon2id, jsonwebtoken) · PostgreSQL 17
 | Extension: AI agent + HITL | `/api/cases`, `/api/agent-runs`, `/api/approvals`, state machine, exactly-once execution |
 | Audit trail | `/api/audit-events`, `audit_events` table |
 | Tests | backend integration tests, frontend tests, Playwright two-context E2E, CI |
-| Documentation / report | [`docs/`](docs/), French report [`docs/report.md`](docs/report.md) |
+| Documentation / report | [`docs/`](docs/), French report [`docs/report/rapport.pdf`](docs/report/rapport.pdf) |
 
 ## Prerequisites
 
@@ -193,7 +193,7 @@ More in [`docs/development.md`](docs/development.md#8-troubleshooting).
   security model
 - [`docs/api.md`](docs/api.md): endpoint reference with examples
 - [`docs/development.md`](docs/development.md): setup, LM Studio, tests, two-device demo
-- [`docs/report.md`](docs/report.md): written report (French)
+- [`docs/report/rapport.pdf`](docs/report/rapport.pdf): written report (French, LaTeX source in `docs/report/rapport.tex`)
 - [`contracts/CONTRACT.md`](contracts/CONTRACT.md): API contract (source of truth)
 
 ## License

@@ -235,11 +235,20 @@ cd tests/e2e && pnpm exec playwright test --config screenshots.config.ts
 This writes `desktop-messaging.png`, `mobile-messaging.png`, `desktop-run-awaiting-approval.png`,
 `mobile-approval-inbox.png`, `mobile-approval-detail.png`, `desktop-dashboard.png`, `desktop-new-case.png`,
 `desktop-concept.png`, `desktop-architecture.png` and `swagger-ui.png` into
-`docs/screenshots/` (all referenced by `docs/report.md`).
+`docs/screenshots/`.
 
-Still to take by hand during the physical demo:
+The report figures `demo-two-devices.png`, `mockup-run-awaiting-approval.png` and `mockup-approval-detail.png` are
+the same screens captured at MacBook Pro 14" (1512×982 @2x) and iPhone 18 Pro (402×874 @3x) resolutions and placed in
+Apple's product bezels (Apple Design Resources, not stored in the repository).
 
-- [ ] photo of the laptop and the phone side by side showing the same conversation
+The report itself is LaTeX, in `docs/report/`:
+
+```bash
+cd docs/report && pdflatex rapport.tex && pdflatex rapport.tex   # second run fills in the table of contents
+```
+
+Optional, by hand during the physical demo:
+
 - [ ] phone: messages recovered after airplane mode / reconnection
 - [ ] green GitHub Actions run (optional)
 
