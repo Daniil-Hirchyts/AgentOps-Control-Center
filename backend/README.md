@@ -47,6 +47,7 @@ synthetic invoice cases owned by alice: 48 750 EUR vs avg 4 200 (high risk), 1 1
 | `LLM_MODEL` | empty | empty → first model from `GET {base}/models` |
 | `LLM_API_KEY` | empty | sent as Bearer if set |
 | `LLM_TIMEOUT_SECONDS` | 120 | per request |
+| `LLM_REASONING_EFFORT` | empty | sent as `reasoning_effort` if set (`none` for reasoning models) |
 | `RUST_LOG` | `agentops=info,tower_http=info` | |
 | `SEED_PASSWORD` | `demo-password-123` | seed binary only |
 

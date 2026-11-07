@@ -76,6 +76,7 @@ Reset the database: `docker compose down -v && docker compose up -d postgres`, t
 | `LLM_MODEL` | empty | model id; empty = first model returned by `/v1/models` |
 | `LLM_API_KEY` | empty | needed by hosted providers; ignored by LM Studio |
 | `LLM_TIMEOUT_SECONDS` | `120` | per-request timeout |
+| `LLM_REASONING_EFFORT` | empty | sent as `reasoning_effort` when set; `none` keeps a reasoning model from spending its tokens on thinking |
 | `LLM_MODE` | `mock` | `mock` (deterministic, no model needed) or `real` |
 
 Docker-only overrides (see section 7): `WEB_PORT`, `WEB_HTTPS_PORT`, `SITE_ADDRESS`, `DOCKER_LLM_BASE_URL`,

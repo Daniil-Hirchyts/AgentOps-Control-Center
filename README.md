@@ -98,7 +98,7 @@ sequence diagrams and security model: [`docs/architecture.md`](docs/architecture
 **Stack:** Rust (Axum, Tokio, SQLx, Utoipa) · PostgreSQL 17 · React 19, TypeScript, TanStack Router and Query,
 Zustand, Tailwind · Docker Compose, Caddy · GitHub Actions · Playwright, Vitest.
 
-**Tests:** 28 backend integration tests against a real PostgreSQL (plus an opt-in test against a real model), 55
+**Tests:** 29 backend tests (22 integration tests against a real PostgreSQL, plus an opt-in one against a real model), 55
 frontend tests, and 3 end-to-end scenarios driving two browsers at once: messaging, approval and rejection.
 
 **Scope:** this is an MVP. The invoice workflow is the demonstration case, the model defaults to the mock, there are
