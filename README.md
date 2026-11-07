@@ -10,7 +10,7 @@ Human-in-the-Loop approval platform for an AI agent running on a local LLM.
   executed exactly once and every step is audited.
 
 Stack: Rust (Axum, Tokio, SQLx, Utoipa, Argon2id, jsonwebtoken) · PostgreSQL 17 · React + Vite + TypeScript
-(TanStack Router/Query, Zustand, Tailwind, shadcn/ui, prompt-kit, motion-primitives) · LM Studio · Docker Compose · Caddy · GitHub Actions.
+(TanStack Router/Query, Zustand, Tailwind, shadcn/ui, prompt-kit, motion-primitives, Anatomy isometric kit) · LM Studio · Docker Compose · Caddy · GitHub Actions.
 
 ![Architecture](docs/architecture.svg)
 

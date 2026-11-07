@@ -67,6 +67,12 @@ test('capture report screenshots (alice desktop operator, bob mobile reviewer)',
   await desk.goto('/operator');
   await desk.waitForTimeout(800);
   await desk.screenshot({ path: `${OUT}/desktop-dashboard.png` });
+  await desk.getByTestId('new-case-button').click();
+  await desk.getByTestId('scenario-spike').click();
+  await expect(desk.getByTestId('case-preview')).toHaveAttribute('data-risk', 'high');
+  await desk.waitForTimeout(300);
+  await desk.screenshot({ path: `${OUT}/desktop-new-case.png` });
+  await desk.keyboard.press('Escape');
   await desk.goto('/api/docs/');
   await desk.waitForTimeout(1500);
   await desk.screenshot({ path: `${OUT}/swagger-ui.png` });

@@ -233,7 +233,8 @@ cd tests/e2e && pnpm exec playwright test --config screenshots.config.ts
 ```
 
 This writes `desktop-messaging.png`, `mobile-messaging.png`, `desktop-run-awaiting-approval.png`,
-`mobile-approval-inbox.png`, `mobile-approval-detail.png`, `desktop-dashboard.png` and `swagger-ui.png` into
+`mobile-approval-inbox.png`, `mobile-approval-detail.png`, `desktop-dashboard.png`, `desktop-new-case.png` and
+`swagger-ui.png` into
 `docs/screenshots/` (all referenced by `docs/report.md`).
 
 Still to take by hand during the physical demo:
