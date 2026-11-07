@@ -37,7 +37,7 @@ export function Calendar({ className, classNames, showOutsideDays = true, ...pro
         today:
           "[&>button]:font-semibold [&>button]:after:absolute [&>button]:after:bottom-1.5 [&>button]:after:size-1 [&>button]:after:rounded-full [&>button]:after:bg-accent-solid [&>button]:after:content-['']",
         selected:
-          '[&>button]:bg-accent-solid [&>button]:text-text-on-accent [&>button]:hover:bg-accent-solid-hover [&>button]:after:bg-text-on-accent',
+          '[&>button]:bg-ink [&>button]:text-text-on-ink [&>button]:hover:bg-ink-hover [&>button]:after:bg-text-on-ink',
         outside: '[&>button]:text-text-disabled',
         disabled: '[&>button]:text-text-disabled [&>button]:pointer-events-none',
         hidden: 'invisible',

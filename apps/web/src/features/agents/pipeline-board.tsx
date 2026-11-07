@@ -16,18 +16,17 @@ import { boardColumnOf, type BoardColumn } from './pipeline'
 interface Lane {
   id: Exclude<BoardColumn, 'stopped'>
   label: string
-  hint: string
   icon: LucideIcon
   status: RunStatus
   tone: 'accent' | 'warning' | 'muted'
 }
 
 const LANES: Lane[] = [
-  { id: 'queued', label: 'Intake', hint: 'Waiting for the model', icon: Inbox, status: 'PENDING', tone: 'muted' },
-  { id: 'analyzing', label: 'Analyze', hint: 'Model call in flight', icon: ScanText, status: 'RUNNING', tone: 'accent' },
-  { id: 'review', label: 'Human review', hint: 'Gate closed until decided', icon: KeyRound, status: 'AWAITING_APPROVAL', tone: 'warning' },
-  { id: 'executing', label: 'Execute', hint: 'Approved, running once', icon: Stamp, status: 'APPROVED', tone: 'accent' },
-  { id: 'completed', label: 'Recorded', hint: 'In the audit log', icon: Archive, status: 'COMPLETED', tone: 'muted' },
+  { id: 'queued', label: 'Intake', icon: Inbox, status: 'PENDING', tone: 'muted' },
+  { id: 'analyzing', label: 'Analyze', icon: ScanText, status: 'RUNNING', tone: 'accent' },
+  { id: 'review', label: 'Human review', icon: KeyRound, status: 'AWAITING_APPROVAL', tone: 'warning' },
+  { id: 'executing', label: 'Execute', icon: Stamp, status: 'APPROVED', tone: 'accent' },
+  { id: 'completed', label: 'Recorded', icon: Archive, status: 'COMPLETED', tone: 'muted' },
 ]
 
 const RISK_DOT: Record<RiskLevel, string> = {
@@ -124,7 +123,7 @@ function LaneHead({ lane, count, last, flowing }: { lane: Lane; count: number | 
             !busy && 'bg-bg-muted text-text-tertiary',
             busy && lane.tone === 'accent' && 'bg-accent-subtle text-accent-text ring-2 ring-accent-solid ring-offset-2 ring-offset-bg-surface',
             busy && lane.tone === 'warning' && 'bg-warning-subtle text-warning-text ring-2 ring-warning-solid ring-offset-2 ring-offset-bg-surface',
-            busy && lane.tone === 'muted' && 'bg-accent-solid text-text-on-accent',
+            busy && lane.tone === 'muted' && 'bg-ink text-text-on-ink',
           )}
         >
           <Icon className="size-4" strokeWidth={1.75} aria-hidden />
@@ -156,8 +155,7 @@ function LaneHead({ lane, count, last, flowing }: { lane: Lane; count: number | 
         )}
         <span className="truncate text-13 font-medium text-text group-hover:underline group-hover:underline-offset-2">{lane.label}</span>
       </div>
-        <p className="mt-1 truncate text-xs text-text-tertiary">{lane.hint}</p>
-      </div>
+        </div>
     </Link>
   )
 }

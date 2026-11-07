@@ -19,7 +19,7 @@ const ICON: Record<StageId, LucideIcon> = {
 }
 
 const NODE: Record<StageState, string> = {
-  done: 'bg-accent-solid text-text-on-accent',
+  done: 'bg-ink text-text-on-ink',
   active: 'bg-accent-subtle text-accent-text ring-2 ring-accent-solid ring-offset-2 ring-offset-bg-surface',
   waiting: 'bg-warning-subtle text-warning-text ring-2 ring-warning-solid ring-offset-2 ring-offset-bg-surface',
   failed: 'bg-danger-solid text-white',
@@ -63,7 +63,7 @@ export function PipelineTrack({ run, compact = false, className }: { run: RunLik
             key={s.id}
             className={cn(
               'h-1.5 w-3.5 rounded-full',
-              s.state === 'done' && 'bg-accent-solid',
+              s.state === 'done' && 'bg-ink',
               s.state === 'active' && 'animate-pulse-soft bg-accent-solid',
               s.state === 'waiting' && 'bg-warning-solid',
               (s.state === 'failed' || s.state === 'stopped') && 'bg-danger-solid',
@@ -135,7 +135,7 @@ function Connector({ state, nextState, live }: { state: StageState; nextState: S
         strokeWidth={1.5}
         strokeLinecap="round"
         className={cn(
-          solid ? 'stroke-accent-solid' : 'stroke-border-strong',
+          live ? 'stroke-accent-solid' : solid ? 'stroke-ink' : 'stroke-border-strong',
           live && 'motion-safe:animate-flow',
         )}
         strokeDasharray={live ? '4 4' : dashed ? '2 4' : undefined}

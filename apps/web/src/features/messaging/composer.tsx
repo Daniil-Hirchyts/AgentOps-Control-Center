@@ -70,7 +70,7 @@ export function Composer({ onSend, onTyping, onStopTyping, disabled, placeholder
             aria-label="Send message"
             data-testid="send-button"
             onClick={(e) => e.stopPropagation()}
-            className="pressable relative inline-flex size-8 items-center after:absolute after:-inset-1.5 after:content-[''] after:rounded-xl justify-center rounded-lg bg-accent-solid text-text-on-accent hover:bg-accent-solid-hover disabled:bg-bg-muted disabled:text-text-tertiary"
+            className="pressable relative inline-flex size-8 items-center after:absolute after:-inset-1.5 after:content-[''] after:rounded-full justify-center rounded-full bg-ink text-text-on-ink hover:bg-ink-hover disabled:bg-bg-muted disabled:text-text-tertiary"
           >
             <ArrowUp className="size-4" strokeWidth={2} />
           </button>
