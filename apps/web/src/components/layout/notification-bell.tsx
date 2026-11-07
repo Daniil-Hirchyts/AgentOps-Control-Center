@@ -2,7 +2,10 @@ import { Link } from '@tanstack/react-router'
 import { Bell } from 'lucide-react'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
+import { AgentAvatar } from '@/components/shared/agent-avatar'
+import { UserAvatar } from '@/components/shared/presence'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { AGENTS } from '@/features/agents/agents'
 import { cn, formatRelative } from '@/lib/utils'
 import { selectUnreadNotifications, useRealtimeStore } from '@/stores/realtime'
 
@@ -61,12 +64,13 @@ export function NotificationBell() {
                 <Link
                   to={n.href ?? '/'}
                   onClick={() => setOpen(false)}
-                  className="flex gap-3 px-4 py-2.5 transition-colors duration-100 hover:bg-bg-muted"
+                  className="mx-1 flex gap-3 rounded-lg px-3 py-2.5 transition-colors duration-100 hover:bg-bg-muted focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus"
                 >
-                  <span
-                    aria-hidden
-                    className={cn('mt-1.5 size-1.5 shrink-0 rounded-full', n.read ? 'bg-transparent' : 'bg-accent-solid')}
-                  />
+                  {n.actor?.kind === 'user' ? (
+                    <UserAvatar username={n.actor.username} size="md" />
+                  ) : (
+                    <AgentAvatar agent={AGENTS[n.actor?.kind === 'agent' ? n.actor.agent : 'relay']} size="md" />
+                  )}
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-13 font-medium" title={n.title}>
                       {n.title}
@@ -80,6 +84,11 @@ export function NotificationBell() {
                       {formatRelative(new Date(n.createdAt).toISOString())}
                     </span>
                   </span>
+                  <span
+                    className={cn('mt-1.5 size-2 shrink-0 rounded-full', n.read ? 'bg-transparent' : 'bg-accent-solid')}
+                    aria-label={n.read ? undefined : 'Unread'}
+                    role={n.read ? undefined : 'img'}
+                  />
                 </Link>
               </li>
             ))}

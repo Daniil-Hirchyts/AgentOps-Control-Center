@@ -1,4 +1,5 @@
 import { Link } from '@tanstack/react-router'
+import { Person } from '@/components/shared/actor'
 import { useState } from 'react'
 import { AnimatedBackground } from '@/components/motion-primitives/animated-background'
 import { PageContainer } from '@/components/layout/app-shell'
@@ -38,11 +39,7 @@ export function ReviewerInbox() {
     <PageContainer className="max-w-3xl">
       <PageHeader title="Approval inbox" />
 
-      <div
-        className="mb-4 inline-flex rounded-lg bg-bg-muted p-0.5"
-        role="tablist"
-        aria-label="Filter approvals"
-      >
+      <div className="mb-4 inline-flex rounded-lg bg-bg-muted p-0.5" role="tablist" aria-label="Filter approvals">
         <AnimatedBackground
           value={filter}
           onValueChange={(id) => id && setFilter(id as Filter)}
@@ -97,7 +94,7 @@ export function ReviewerInbox() {
 function ApprovalRow({ approval: a, fresh }: { approval: ApprovalDto; fresh: boolean }) {
   const pending = a.status === 'PENDING'
   return (
-    <li>
+    <li className={cn(fresh && 'animate-row-in')}>
       <Link
         to="/reviewer/approvals/$approvalId"
         params={{ approvalId: String(a.id) }}
@@ -125,8 +122,8 @@ function ApprovalRow({ approval: a, fresh }: { approval: ApprovalDto; fresh: boo
           </p>
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 pt-1 text-xs text-text-tertiary">
             <PipelineTrack run={runOfApproval(a)} compact />
-            <span className="truncate">
-              From {a.requestedByUsername} ·{' '}
+            <span className="inline-flex min-w-0 items-center gap-1">
+              <Person username={a.requestedByUsername} className="text-text-secondary" /> ·{' '}
               <time dateTime={a.createdAt} title={formatDateTime(a.createdAt)} className="tabular-nums">
                 {formatRelative(a.createdAt)}
               </time>
@@ -135,7 +132,9 @@ function ApprovalRow({ approval: a, fresh }: { approval: ApprovalDto; fresh: boo
           </div>
         </div>
         <div className="col-span-2 flex items-center justify-between gap-4 sm:col-span-1 sm:flex-col sm:items-end sm:gap-1.5">
-          <span className="text-base font-semibold tracking-[-0.01em] tabular-nums">{formatMoney(a.invoice.amount, a.invoice.currency)}</span>
+          <span className="text-base font-semibold tracking-[-0.01em] tabular-nums">
+            {formatMoney(a.invoice.amount, a.invoice.currency)}
+          </span>
           <DeviationMini invoice={a.invoice} />
         </div>
       </Link>

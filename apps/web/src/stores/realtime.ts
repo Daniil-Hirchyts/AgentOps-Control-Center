@@ -1,11 +1,14 @@
 import { create } from 'zustand'
 import type { WsStatus } from '@/lib/ws'
+import type { AgentId } from '@/features/agents/agents'
 import type { Id } from '@/lib/types'
 
 export interface AppNotification {
   id: string
   title: string
   description?: string
+  /** Who it is from: a person (portrait) or an agent (pattern). */
+  actor?: { kind: 'user'; username: string } | { kind: 'agent'; agent: AgentId }
   /** In-app link target */
   href?: string
   createdAt: number

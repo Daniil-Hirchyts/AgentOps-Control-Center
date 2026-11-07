@@ -1,11 +1,14 @@
 import type { QueryClient } from '@tanstack/react-query'
+import { createElement } from 'react'
 import { toast } from 'sonner'
+import { UserAvatar } from '@/components/shared/presence'
 import { upsertServerMessage, updateByClientId } from '@/features/messaging/cache'
 import type { ChatMessage } from '@/features/messaging/types'
 import { useRealtimeStore } from '@/stores/realtime'
 import { qk } from './query-keys'
 import type { RunStatus, UserDto } from './types'
 import type { ServerEvent } from './ws-events'
+import { rememberOnline } from '@/features/messaging/seen'
 import { actionLabel, approvalStatusLabel, riskLabel, runStatusLabel } from './labels'
 
 export interface HandlerDeps {
@@ -72,6 +75,7 @@ export function handleServerEvent(event: ServerEvent, { qc, me, navigate }: Hand
       if (qc.isFetching({ queryKey: qk.users }) > 0) {
         void qc.invalidateQueries({ queryKey: qk.users })
       }
+      if (event.online) rememberOnline([event.userId])
       if (!event.online) clearTyping(event.userId)
       return
     }
@@ -121,9 +125,11 @@ export function handleServerEvent(event: ServerEvent, { qc, me, navigate }: Hand
         title,
         description,
         href,
+        actor: iAmRequester ? { kind: 'agent', agent: 'gatekeeper' } : { kind: 'user', username: usernameOf(qc, event.requestedBy) },
       })
       toast.warning(title, {
         id: `approval-req-${event.approvalId}`,
+        icon: iAmRequester ? undefined : createElement(UserAvatar, { username: usernameOf(qc, event.requestedBy), size: 'xs' }),
         description,
         action: { label: 'Open', onClick: () => navigate(href) },
       })
@@ -141,6 +147,7 @@ export function handleServerEvent(event: ServerEvent, { qc, me, navigate }: Hand
         title,
         description: event.decidedBy ? `by ${usernameOf(qc, event.decidedBy)}` : undefined,
         href,
+        actor: event.decidedBy ? { kind: 'user', username: usernameOf(qc, event.decidedBy) } : undefined,
       })
       const fn = event.status === 'APPROVED' ? toast.success : toast.error
       fn(title, { id: `approval-res-${event.approvalId}`, action: { label: 'View', onClick: () => navigate(href) } })
@@ -151,7 +158,7 @@ export function handleServerEvent(event: ServerEvent, { qc, me, navigate }: Hand
       if (event.clientMessageId) {
         updateByClientId(qc, event.clientMessageId, { delivery: 'failed', failureReason: event.message })
       }
-      const title = event.code === 'rate_limited' ? 'Slow down — too many messages' : 'Message not delivered'
+      const title = event.code === 'rate_limited' ? 'Too many messages at once' : 'Message not sent'
       toast.error(title, { id: `ws-error-${event.code}`, description: event.message })
       return
     }

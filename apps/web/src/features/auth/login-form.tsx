@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input'
 import { api, ApiError, errorMessage } from '@/lib/api'
 import type { LoginResponse } from '@/lib/types'
 import { DEMO_ACCOUNTS, DEMO_PASSWORD } from './demo-accounts'
+import { UserAvatar } from '@/components/shared/presence'
 import { FormField } from './form-field'
 import { loginSchema, type LoginValues } from './schemas'
 
@@ -82,9 +83,10 @@ export function LoginForm({ onSuccess }: { onSuccess: (session: LoginResponse) =
               key={a.username}
               type="button"
               onClick={() => fillDemo(a.username)}
-              className="pressable flex h-10 items-center justify-between rounded-md border px-3 text-start text-13 hover:bg-bg-muted"
+              className="pressable flex h-11 items-center gap-2.5 rounded-xl border px-2.5 text-start text-13 transition-colors duration-150 hover:bg-bg-muted"
             >
-              <span className="font-medium">{a.username}</span>
+              <UserAvatar username={a.username} size="sm" />
+              <span className="flex-1 font-medium">{a.username}</span>
               <span className="text-text-tertiary">{a.role}</span>
             </button>
           ))}

@@ -1,4 +1,6 @@
 import { Link } from '@tanstack/react-router'
+import { Agent, Person } from '@/components/shared/actor'
+import { agentForEvent } from '@/features/agents/agents'
 import { PageContainer } from '@/components/layout/app-shell'
 import { PageHeader } from '@/components/shared/page-header'
 import { EmptyState, ErrorState, RowsSkeleton } from '@/components/shared/states'
@@ -92,7 +94,9 @@ export function AuditPage({
                       <span className="text-text-tertiary">—</span>
                     )}
                   </TableCell>
-                  <TableCell className="hidden text-text-secondary sm:table-cell">{e.actorUsername ?? 'System'}</TableCell>
+                  <TableCell className="hidden text-text-secondary sm:table-cell">
+                    {e.actorUsername ? <Person username={e.actorUsername} /> : <Agent agent={agentForEvent(e.eventType).id} />}
+                  </TableCell>
                   <TableCell
                     className="hidden max-w-md truncate text-13 text-text-secondary md:table-cell"
                     title={summary ?? JSON.stringify(e.payload)}

@@ -1,4 +1,5 @@
 import { Link } from '@tanstack/react-router'
+import { Person } from '@/components/shared/actor'
 import type { ReactNode } from 'react'
 import { SystemMessage } from '@/components/prompt-kit/system-message'
 import { ThinkingBar } from '@/components/prompt-kit/thinking-bar'
@@ -36,7 +37,7 @@ export function RunDetailPage({ runId }: { runId: number }) {
         {back}
         <ErrorState
           error={run.error}
-          title={run.error instanceof ApiError && run.error.isNotFound ? 'Run not found' : 'Could not load run'}
+          title={run.error instanceof ApiError && run.error.isNotFound ? 'Run not found' : 'Unable to load this run'}
           onRetry={() => void run.refetch()}
         />
       </PageContainer>
@@ -164,7 +165,9 @@ function ApprovalSummary({ run: r, reviewerName }: { run: AgentRunDto; reviewerN
   return (
     <div className="space-y-4">
       <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-6 gap-y-2 text-sm">
-        <Row label="Reviewer">{reviewerName}</Row>
+        <Row label="Reviewer">
+          <Person username={reviewerName} size="sm" />
+        </Row>
         {a && (
           <>
             <Row label="Proposed">{actionLabel(a.proposedAction)}</Row>

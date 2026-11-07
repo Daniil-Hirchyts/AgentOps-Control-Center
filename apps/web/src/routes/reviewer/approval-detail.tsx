@@ -1,4 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query'
+import { Person } from '@/components/shared/actor'
 import { Link } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
@@ -80,7 +81,7 @@ export function ApprovalDetailPage({ approvalId }: { approvalId: number }) {
           title={
             approval.error instanceof ApiError && approval.error.isNotFound
               ? 'Approval not found'
-              : 'Could not load approval'
+              : 'Unable to load this approval'
           }
           onRetry={() => void approval.refetch()}
         />
@@ -111,7 +112,7 @@ export function ApprovalDetailPage({ approvalId }: { approvalId: number }) {
         void qc.invalidateQueries({ queryKey: qk.approval(approvalId) })
         void qc.invalidateQueries({ queryKey: qk.approvals })
       } else {
-        toast.error('Decision failed', { description: errorMessage(err) })
+        toast.error('Unable to record your decision', { description: `${errorMessage(err)} Try again.` })
       }
     }
   }
@@ -131,8 +132,8 @@ export function ApprovalDetailPage({ approvalId }: { approvalId: number }) {
           <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
             <ApprovalStatusBadge status={a.status} />
             <MetaDot />
-            <span>
-              Requested by {a.requestedByUsername}{' '}
+            <span className="inline-flex flex-wrap items-center gap-x-1.5">
+              Requested by <Person username={a.requestedByUsername} className="text-text" />
               <time dateTime={a.createdAt} title={formatDateTime(a.createdAt)} className="tabular-nums">
                 {formatRelative(a.createdAt)}
               </time>
@@ -174,7 +175,12 @@ export function ApprovalDetailPage({ approvalId }: { approvalId: number }) {
             <SystemMessage variant={a.status === 'APPROVED' ? 'success' : 'error'}>
               <p>
                 {a.status === 'APPROVED' ? 'Approved' : 'Rejected'}
-                {a.decidedBy === a.reviewerId ? ` by ${a.reviewerUsername}` : ''}{' '}
+                {a.decidedBy === a.reviewerId && (
+                  <>
+                    {' by '}
+                    <Person username={a.reviewerUsername} />
+                  </>
+                )}{' '}
                 <span className="tabular-nums opacity-80">{formatDateTime(a.decidedAt)}</span>
               </p>
               <p className="mt-0.5 opacity-80">{a.decisionReason ? `“${a.decisionReason}”` : 'No reason given.'}</p>

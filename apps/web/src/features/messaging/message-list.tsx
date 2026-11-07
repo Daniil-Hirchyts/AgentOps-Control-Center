@@ -1,7 +1,8 @@
 import { type ReactNode, useEffect, useState } from 'react'
 import { useStickToBottomContext } from 'use-stick-to-bottom'
 import { ChatContainerContent, ChatContainerRoot } from '@/components/prompt-kit/chat-container'
-import { Message, MessageAvatar, MessageContent } from '@/components/prompt-kit/message'
+import { Message, MessageContent } from '@/components/prompt-kit/message'
+import { UserAvatar } from '@/components/shared/presence'
 import { ScrollButton } from '@/components/prompt-kit/scroll-button'
 import type { Id } from '@/lib/types'
 import { cn, dayKey, formatDateTime, formatDayLabel, formatTime } from '@/lib/utils'
@@ -44,7 +45,7 @@ export function MessageList({ messages, meId, otherName, onRetry, onDiscard, foo
                 {showDay && <DaySeparator iso={m.dateEnvoi} />}
                 <div className={cn(joinsPrev ? 'mt-0.5' : 'mt-3', isNew && 'animate-message-in')} data-motion={isNew ? 'transform' : undefined}>
                   <Message className={cn('items-end', mine ? 'flex-row-reverse' : 'flex-row')}>
-                    {!mine && <MessageAvatar name={otherName} hidden={joinsNext} />}
+                    {!mine && <UserAvatar username={otherName} size="sm" className={cn('self-end', joinsNext && 'invisible')} />}
                     <MessageContent
                       data-testid="message-bubble"
                       data-mine={mine ? 'true' : 'false'}
