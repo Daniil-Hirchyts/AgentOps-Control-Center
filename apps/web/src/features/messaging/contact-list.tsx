@@ -20,15 +20,21 @@ export function ContactList({ selectedUserId }: { selectedUserId?: Id }) {
   const unread = useRealtimeStore((s) => s.unreadMessages)
 
   const [showAll, setShowAll] = useState(false)
+  // Read once per mount: someone coming online later does not shuffle the list under your cursor.
+  const [seen] = useState(readSeenOnline)
 
   const query = filter.trim().toLowerCase()
   const visible = contacts.filter((c) => c.username.toLowerCase().includes(query))
   const online = visible.filter((c) => c.online)
-  // Offline people: unread or open conversation first, then anyone seen online this session, then A to Z.
-  const seen = readSeenOnline()
-  const rank = (c: (typeof contacts)[number]) => ((unread[c.id] ?? 0) > 0 || c.id === selectedUserId ? 2 : seen.has(c.id) ? 1 : 0)
+  // Offline people: anyone seen online this session first, then A to Z. The order never depends on
+  // what you click or read, so rows stay put; the open conversation and unread people are simply
+  // never hidden behind "Show more".
   const offline = visible.filter((c) => !c.online).sort((a, b) => rank(b) - rank(a) || a.username.localeCompare(b.username))
-  const capped = query || showAll ? offline : offline.slice(0, OFFLINE_CAP)
+  function rank(c: (typeof contacts)[number]) {
+    return seen.has(c.id) ? 1 : 0
+  }
+  const capped =
+    query || showAll ? offline : offline.filter((c, i) => i < OFFLINE_CAP || c.id === selectedUserId || (unread[c.id] ?? 0) > 0)
   const hiddenCount = offline.length - capped.length
   const onlineCount = contacts.filter((c) => c.online).length
 
