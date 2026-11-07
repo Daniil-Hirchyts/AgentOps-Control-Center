@@ -92,8 +92,9 @@ blue for live and interactive state, and a small set of graphic hues for avatars
   (`md:max-w-4xl`); on a phone the same groups become two steps ("Step 1 of 2") with Continue and Back.
   Related inputs join into one control (amount and currency). Short choices sit side by side.
 - Long lists show what matters first and say what is hidden: the contact list groups Online and
-  Offline, keeps anyone with unread messages or seen online this session on top, and shows five
-  offline people behind "Show n more". Searching always shows everyone.
+  Offline (people seen online this session first, then A to Z) and shows five offline people behind
+  "Show n more". The open conversation and anyone with unread messages are never hidden. Rows never
+  move because of a click or a read: the order depends only on presence and names.
 - Scrollbars are hidden everywhere. Every scroll area still scrolls with wheel, touch and keyboard,
   and a sideways area says so on phones ("Swipe sideways to see the whole diagram.").
 
@@ -196,22 +197,30 @@ visuals read from it, so they cannot disagree.
 
 ## 11. Learn pages
 
-`/learn/concept` explains what is simulated, who is involved, the four case scenarios and the life of
+`/learn/concept` presents AgentOps as a platform for supervising and validating AI agents (messaging
+is one part of it, used by the two people who decide), then the five ideas it puts to work (agentic AI,
+human in the loop, tool calling, observability, WebSocket), what is simulated, who is involved, the four case scenarios and the life of
 a case. `/learn/architecture` explains the system: the map of devices, proxy, server, database and
 model; which channel (REST or WebSocket) carries what; sequence diagrams for a message, the approval
 loop and sign-in; and the run state machine. Diagrams are hand-placed SVG in `features/learn/diagrams/`
 using the same tokens, with one line style per channel (REST solid ink, WebSocket dashed blue, SQL
 green, model dotted purple). They scroll sideways inside their frame on a phone.
 
-The diagrams are live and interactive:
+The diagrams are live and interactive. Each one starts playing when it scrolls into view and loops
+until the reader pauses, steps or picks a step; it waits while off screen or while a part is pointed
+at, and never starts by itself with reduced motion. Live regions stay quiet during autoplay. Wires
+end exactly on their boxes, arrowheads keep one size (`markerUnits="userSpaceOnUse"`) and labels
+carry a surface-coloured halo so lifelines never cut through them.
 
 - **System map**: hover or focus a part to see what it does and dim everything unrelated; click to
   pin it. Your own REST calls and socket frames (recorded by `stores/traffic.ts` from `lib/api.ts` and
   the realtime provider) travel across the map as packets and fill a traffic log. "Replay a message"
-  and "Replay an approval" animate the two main flows. The people online are shown under the map.
+  and "Replay an approval" animate the two main flows, and the map replays them in turn on its own
+(a pause button stops it). The people online are shown under the map.
 - **Sequences**: Play, pause, step with the arrow keys or click a step. The current arrow carries a
   travelling dot and the actors involved are outlined.
-- **Run state machine**: pick a path (approved, rejected, no action, model fails) and play it. Each
+- **Run state machine**: plays every path in turn (approved, rejected, no action, model fails); pick
+  one to loop it. Each
   state shows how many runs are in it right now; operators can click a state to open those runs.
 
 ## 12. App icon
