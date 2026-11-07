@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form'
 import { CircularLoader } from '@/components/prompt-kit/loader'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { PasswordInput } from '@/components/ui/password-input'
 import { api, ApiError, errorMessage } from '@/lib/api'
 import type { LoginResponse } from '@/lib/types'
 import { DEMO_ACCOUNTS, DEMO_PASSWORD } from './demo-accounts'
@@ -53,9 +54,8 @@ export function LoginForm({ onSuccess }: { onSuccess: (session: LoginResponse) =
         />
       </FormField>
       <FormField id="password" label="Password" error={errors.password?.message}>
-        <Input
+        <PasswordInput
           id="password"
-          type="password"
           autoComplete="current-password"
           data-testid="login-password"
           aria-invalid={!!errors.password}

@@ -4,6 +4,7 @@ import { useForm, useWatch } from 'react-hook-form'
 import { CircularLoader } from '@/components/prompt-kit/loader'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { PasswordInput } from '@/components/ui/password-input'
 import { api, ApiError, errorMessage } from '@/lib/api'
 import type { AccountCreated } from '@/lib/types'
 import { cn } from '@/lib/utils'
@@ -71,9 +72,8 @@ export function RegisterForm({ onSuccess }: { onSuccess: (account: AccountCreate
         />
       </FormField>
       <FormField id="password" label="Password" error={errors.password?.message} hint="At least 8 characters">
-        <Input
+        <PasswordInput
           id="password"
-          type="password"
           autoComplete="new-password"
           data-testid="register-password"
           aria-invalid={!!errors.password}
@@ -82,9 +82,8 @@ export function RegisterForm({ onSuccess }: { onSuccess: (account: AccountCreate
         />
       </FormField>
       <FormField id="confirm" label="Confirm password" error={errors.confirm?.message}>
-        <Input
+        <PasswordInput
           id="confirm"
-          type="password"
           autoComplete="new-password"
           data-testid="register-confirm"
           aria-invalid={!!errors.confirm}

@@ -12,6 +12,22 @@ const session = {
 }
 
 describe('LoginForm', () => {
+  it('shows and hides the password without submitting', async () => {
+    const fetchMock = mockFetch([])
+    render(<LoginForm onSuccess={vi.fn()} />)
+    const field = screen.getByTestId('login-password')
+    await userEvent.type(field, 'secret-pass')
+    expect(field).toHaveAttribute('type', 'password')
+
+    await userEvent.click(screen.getByRole('button', { name: 'Show password' }))
+    expect(field).toHaveAttribute('type', 'text')
+    expect(field).toHaveValue('secret-pass')
+
+    await userEvent.click(screen.getByRole('button', { name: 'Hide password' }))
+    expect(field).toHaveAttribute('type', 'password')
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
   it('shows validation errors and does not call the API when empty', async () => {
     const fetchMock = mockFetch([])
     const onSuccess = vi.fn()
