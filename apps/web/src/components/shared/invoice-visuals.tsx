@@ -117,32 +117,53 @@ function Marker({ at, label, value, side, dashed }: { at: number; label: string;
   )
 }
 
-/** Half-dial: three bands, needle at the band's middle. */
+/**
+ * Half-dial: three equal segments with clear gaps (butt caps, so nothing overlaps). Only the
+ * result's segment is coloured; the others stay neutral. A slim tapered needle points at its middle.
+ */
+const GAUGE_FILL: Record<RiskLevel, string> = {
+  low: 'stroke-success-solid',
+  medium: 'stroke-warning-solid',
+  high: 'stroke-danger-solid',
+}
+
 export function RiskGauge({ level, className, size = 112 }: { level: RiskLevel; className?: string; size?: number }) {
   const angle = { low: -60, medium: 0, high: 60 }[level]
-  const band = (from: number, to: number) => {
-    const r = 40
-    const a0 = ((from - 90) * Math.PI) / 180
-    const a1 = ((to - 90) * Math.PI) / 180
-    return `M ${50 + r * Math.cos(a0)} ${50 + r * Math.sin(a0)} A ${r} ${r} 0 0 1 ${50 + r * Math.cos(a1)} ${50 + r * Math.sin(a1)}`
+  const R = 38
+  const arc = (from: number, to: number) => {
+    const p = (deg: number) => {
+      const a = ((deg - 90) * Math.PI) / 180
+      return `${(50 + R * Math.cos(a)).toFixed(2)} ${(50 + R * Math.sin(a)).toFixed(2)}`
+    }
+    return `M ${p(from)} A ${R} ${R} 0 0 1 ${p(to)}`
   }
-  const active = (l: RiskLevel) => (l === level ? 1 : 0.28)
+  const segments: [RiskLevel, number, number][] = [
+    ['low', -90, -32],
+    ['medium', -28, 28],
+    ['high', 32, 90],
+  ]
   return (
     <figure className={cn('inline-flex flex-col items-center', className)} data-testid="risk-gauge" data-level={level}>
-      <svg viewBox="0 4 100 52" width={size} height={size * 0.52} aria-hidden className="overflow-visible">
-        <path d={band(-88, -32)} className="stroke-success-solid" strokeWidth={9} fill="none" strokeLinecap="round" opacity={active('low')} />
-        <path d={band(-28, 28)} className="stroke-warning-solid" strokeWidth={9} fill="none" strokeLinecap="round" opacity={active('medium')} />
-        <path d={band(32, 88)} className="stroke-danger-solid" strokeWidth={9} fill="none" strokeLinecap="round" opacity={active('high')} />
+      <svg viewBox="4 6 92 48" width={size} height={size * (48 / 92)} aria-hidden className="overflow-visible">
+        {segments.map(([l, from, to]) => (
+          <path
+            key={l}
+            d={arc(from, to)}
+            fill="none"
+            strokeWidth={8}
+            strokeLinecap="butt"
+            className={l === level ? GAUGE_FILL[l] : 'stroke-bg-active'}
+          />
+        ))}
         <g
           style={{ transform: `rotate(${angle}deg)`, transformOrigin: '50px 50px', transition: 'transform 500ms var(--ease-out)' }}
           data-motion="transform"
         >
-          <line x1="50" y1="50" x2="50" y2="20" className="stroke-text" strokeWidth={2.5} strokeLinecap="round" />
+          <path d="M 48.6 50 L 50 22 L 51.4 50 Z" className="fill-text" />
         </g>
-        <circle cx="50" cy="50" r="4.5" className="fill-text" />
-        <circle cx="50" cy="50" r="1.6" className="fill-bg-surface" />
+        <circle cx="50" cy="50" r="3.2" className="fill-text" />
       </svg>
-      <figcaption className="mt-1 text-13 font-medium">{RISK[level].label}</figcaption>
+      <figcaption className="mt-1.5 text-13 font-medium">{RISK[level].label}</figcaption>
     </figure>
   )
 }
