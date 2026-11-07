@@ -29,7 +29,7 @@ export function ScenarioPicker({
         <legend className="text-sm font-medium text-text">Start from a scenario</legend>
         {aside}
       </div>
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2">
         {SCENARIOS.map((s) => {
           const selected = value === s.id
           return (

@@ -14,12 +14,12 @@ const ROLE_OPTIONS = [
   {
     value: 'OPERATOR',
     title: 'Operator',
-    text: 'Creates invoice investigations and launches AI analyses.',
+    text: 'Opens cases and runs the agent.',
   },
   {
     value: 'REVIEWER',
     title: 'Reviewer',
-    text: 'Approves or rejects actions proposed by the AI agent.',
+    text: 'Approves or rejects what the agent proposes.',
   },
 ] as const
 
@@ -95,14 +95,14 @@ export function RegisterForm({ onSuccess }: { onSuccess: (account: AccountCreate
 
       <fieldset>
         <legend className="mb-1.5 text-13 font-medium">Role</legend>
-        <div className="grid gap-1.5">
+        <div className="grid grid-cols-2 gap-2">
           {ROLE_OPTIONS.map((opt) => {
             const checked = role === opt.value
             return (
               <label
                 key={opt.value}
                 className={cn(
-                  'flex cursor-pointer items-start gap-3 rounded-md border px-3 py-2.5 transition-colors duration-100 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-focus',
+                  'flex cursor-pointer items-start gap-2.5 rounded-xl border px-3 py-2.5 transition-colors duration-150 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-focus',
                   checked ? 'border-accent-solid bg-accent-subtle' : 'hover:bg-bg-muted',
                 )}
               >

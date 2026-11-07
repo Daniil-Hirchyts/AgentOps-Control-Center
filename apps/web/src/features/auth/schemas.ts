@@ -17,7 +17,7 @@ export const registerSchema = z
       .max(32, 'At most 32 characters')
       .regex(USERNAME_RE, 'Only letters, digits, “_”, “.” and “-”'),
     password: z.string().min(8, 'At least 8 characters').max(128, 'At most 128 characters'),
-    confirm: z.string().min(1, 'Please confirm your password'),
+    confirm: z.string().min(1, 'Type the password again to confirm it'),
     role: z.enum(['OPERATOR', 'REVIEWER']),
   })
   .refine((v) => v.password === v.confirm, { path: ['confirm'], message: 'Passwords do not match' })
