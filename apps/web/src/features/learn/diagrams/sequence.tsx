@@ -28,7 +28,7 @@ const ACTOR_FILL: Record<NonNullable<Actor['tone']>, string> = {
  * At rest every step is shown, so the diagram still reads as a static figure.
  */
 export function Sequence({ label, actors, steps, colWidth = 170 }: { label: string; actors: Actor[]; steps: Step[]; colWidth?: number }) {
-  const player = usePlayer(steps.length)
+  const { attach, ...player } = usePlayer(steps.length)
   const current = player.index
   const reduced = useReducedMotion()
   const head = 64
@@ -41,20 +41,19 @@ export function Sequence({ label, actors, steps, colWidth = 170 }: { label: stri
 
   return (
     <DiagramFrame
+      ref={attach}
       label={label}
       minWidth={W}
       toolbar={<PlayerControls player={player} label={label} />}
       footer={
-        <p className="min-h-10 text-13 text-text-secondary" aria-live="polite">
+        <p className="min-h-10 text-13 text-text-secondary" aria-live={player.auto ? 'off' : 'polite'}>
           {step ? (
             <>
-              <span className="font-medium text-text">
-                {'at' in step ? step.note : step.label}
-              </span>
+              <span className="font-medium text-text">{'at' in step ? step.note : step.label}</span>
               {'at' in step ? null : step.note ? <> · {step.note}</> : null}
             </>
           ) : (
-            'Press play to watch it happen step by step, or select a step.'
+            'Plays by itself while on screen. Pause it, or select a step.'
           )}
         </p>
       }
@@ -74,14 +73,28 @@ export function Sequence({ label, actors, steps, colWidth = 170 }: { label: stri
                 width={colWidth - 20}
                 height={head - 14}
                 rx={14}
-                className={cn(ACTOR_FILL[a.tone ?? 'muted'], 'transition-[stroke-width] duration-150', involved ? 'stroke-accent-solid' : 'stroke-transparent')}
+                className={cn(
+                  ACTOR_FILL[a.tone ?? 'muted'],
+                  'transition-[stroke-width] duration-150',
+                  involved ? 'stroke-accent-solid' : 'stroke-transparent',
+                )}
                 strokeWidth={involved ? 2 : 0}
               />
-              <text x={cx} y={a.sub ? 28 : 36} textAnchor="middle" className={cn('text-[12.5px] font-semibold', ink ? 'fill-text-on-ink' : 'fill-text')}>
+              <text
+                x={cx}
+                y={a.sub ? 28 : 36}
+                textAnchor="middle"
+                className={cn('text-[12.5px] font-semibold', ink ? 'fill-text-on-ink' : 'fill-text')}
+              >
                 {a.label}
               </text>
               {a.sub && (
-                <text x={cx} y={44} textAnchor="middle" className={cn('text-[11px]', ink ? 'fill-text-on-ink opacity-70' : 'fill-text-secondary')}>
+                <text
+                  x={cx}
+                  y={44}
+                  textAnchor="middle"
+                  className={cn('text-[11px]', ink ? 'fill-text-on-ink opacity-70' : 'fill-text-secondary')}
+                >
                   {a.sub}
                 </text>
               )}
@@ -139,20 +152,50 @@ export function Sequence({ label, actors, steps, colWidth = 170 }: { label: stri
             <g key={i} {...groupProps}>
               {hit}
               {self ? (
-                <path d={`M${x1} ${y - 6} h 34 v 14 h -30`} fill="none" strokeWidth={live ? 2.5 : 1.75} markerEnd={`url(#ah-${s.kind})`} {...strokeFor(s.kind)} />
+                <path
+                  d={`M${x1} ${y - 6} h 34 v 14 h -30`}
+                  fill="none"
+                  strokeWidth={live ? 2.5 : 1.75}
+                  markerEnd={`url(#ah-${s.kind})`}
+                  {...strokeFor(s.kind)}
+                />
               ) : (
-                <line x1={x1 + dir * 4} x2={x2 - dir * 6} y1={y} y2={y} strokeWidth={live ? 2.5 : 1.75} markerEnd={`url(#ah-${s.kind})`} {...strokeFor(s.kind)} />
+                <line
+                  x1={x1 + dir * 4}
+                  x2={x2 - dir * 6}
+                  y1={y}
+                  y2={y}
+                  strokeWidth={live ? 2.5 : 1.75}
+                  markerEnd={`url(#ah-${s.kind})`}
+                  {...strokeFor(s.kind)}
+                />
               )}
               {live && !self && <TravellingDot key={`dot-${i}`} x1={x1} x2={x2} y={y} kind={s.kind} reduced={reduced} />}
               <circle cx={self ? x1 : x1 + dir * 14} cy={y - 13} r={8} className={live ? 'fill-accent-solid' : 'fill-ink'} />
               <text x={self ? x1 : x1 + dir * 14} y={y - 9.5} textAnchor="middle" className="fill-text-on-ink text-[9.5px] font-semibold">
                 {numbers[i]}
               </text>
-              <text x={tx} y={y - 9} textAnchor={anchor} className="fill-text text-[11.5px] font-medium">
+              <text
+                x={tx}
+                y={y - 9}
+                textAnchor={anchor}
+                className="fill-text text-[11.5px] font-medium [paint-order:stroke]"
+                stroke="var(--color-bg-surface)"
+                strokeWidth={5}
+                strokeLinejoin="round"
+              >
                 {s.label}
               </text>
               {s.note && (
-                <text x={tx} y={y + 15} textAnchor={anchor} className="fill-text-tertiary text-[10.5px]">
+                <text
+                  x={tx}
+                  y={y + 15}
+                  textAnchor={anchor}
+                  className="fill-text-tertiary text-[10.5px] [paint-order:stroke]"
+                  stroke="var(--color-bg-surface)"
+                  strokeWidth={5}
+                  strokeLinejoin="round"
+                >
                   {s.note}
                 </text>
               )}

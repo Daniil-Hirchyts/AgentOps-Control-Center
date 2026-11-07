@@ -1,11 +1,12 @@
-import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
+import { Pause, Play } from 'lucide-react'
+import { useCallback, useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
 import { UserAvatar } from '@/components/shared/presence'
 import { useUsers } from '@/features/messaging/hooks'
 import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/stores/auth'
 import { useRealtimeStore } from '@/stores/realtime'
 import { type Frame, useTraffic } from '@/stores/traffic'
-import { age, type Kind, PACKET_FILL, strokeFor, useNow, useReducedMotion } from './model'
+import { age, type Kind, PACKET_FILL, strokeFor, useInView, useNow, useReducedMotion } from './model'
 import { Arrowheads, DiagramFrame, Legend } from './shared'
 
 /* ------------------------------------------------------------------ model */
@@ -13,9 +14,18 @@ import { Arrowheads, DiagramFrame, Legend } from './shared'
 type NodeId = 'a' | 'b' | 'caddy' | 'rest' | 'auth' | 'hub' | 'worker' | 'db' | 'llm'
 type LinkId = 'a-rest' | 'a-ws' | 'b-rest' | 'b-ws' | 'caddy-rest' | 'caddy-ws' | 'rest-db' | 'hub-db' | 'worker-llm' | 'worker-hub'
 
-const LINKS: Record<LinkId, { d: string; kind: Kind; both?: boolean; nodes: [NodeId, NodeId]; label?: [string, number, number, ('start' | 'middle' | 'end')?] }> = {
+const LINKS: Record<
+  LinkId,
+  { d: string; kind: Kind; both?: boolean; nodes: [NodeId, NodeId]; label?: [string, number, number, ('start' | 'middle' | 'end')?] }
+> = {
   'a-rest': { d: 'M240 112 C 290 112, 300 240, 330 240', kind: 'rest', nodes: ['a', 'caddy'], label: ['HTTPS · REST', 292, 102] },
-  'a-ws': { d: 'M240 160 C 290 160, 300 268, 330 268', kind: 'ws', both: true, nodes: ['a', 'caddy'], label: ['WebSocket', 294, 238, 'end'] },
+  'a-ws': {
+    d: 'M240 160 C 290 160, 300 268, 330 268',
+    kind: 'ws',
+    both: true,
+    nodes: ['a', 'caddy'],
+    label: ['WebSocket', 294, 238, 'end'],
+  },
   'b-rest': { d: 'M240 402 C 290 402, 300 300, 330 300', kind: 'rest', nodes: ['b', 'caddy'] },
   'b-ws': { d: 'M240 450 C 290 450, 300 324, 330 324', kind: 'ws', both: true, nodes: ['b', 'caddy'] },
   'caddy-rest': { d: 'M500 250 C 540 250, 550 119, 590 119', kind: 'rest', nodes: ['caddy', 'rest'] },
@@ -90,9 +100,17 @@ const HOP_MS = 520
 function tripFor(f: Frame, side: 'a' | 'b'): Hop[] {
   const rest: LinkId = side === 'a' ? 'a-rest' : 'b-rest'
   const ws: LinkId = side === 'a' ? 'a-ws' : 'b-ws'
-  if (f.channel === 'rest') return [{ link: rest, at: 0 }, { link: 'caddy-rest', at: 1 }, { link: 'rest-db', at: 2 }]
+  if (f.channel === 'rest')
+    return [
+      { link: rest, at: 0 },
+      { link: 'caddy-rest', at: 1 },
+      { link: 'rest-db', at: 2 },
+    ]
   if (f.dir === 'out') {
-    const hops: Hop[] = [{ link: ws, at: 0 }, { link: 'caddy-ws', at: 1 }]
+    const hops: Hop[] = [
+      { link: ws, at: 0 },
+      { link: 'caddy-ws', at: 1 },
+    ]
     if (f.label === 'message') hops.push({ link: 'hub-db', at: 2 })
     return hops
   }
@@ -103,6 +121,10 @@ function tripFor(f: Frame, side: 'a' | 'b'): Hop[] {
     { link: 'caddy-ws', reverse: true, at: o },
     { link: ws, reverse: true, at: o + 1 },
   ]
+}
+
+function spanOf(hops: Hop[]) {
+  return (Math.max(...hops.map((h) => h.at)) + 1) * HOP_MS + 200
 }
 
 const DEMOS: { id: string; label: string; hops: Hop[] }[] = [
@@ -150,12 +172,28 @@ export function SystemMap() {
   const [trips, setTrips] = useState<Trip[]>([])
   const tripSeq = useRef(0)
 
-  const launch = (hops: Hop[]) => {
+  const launch = useCallback((hops: Hop[]) => {
     const id = ++tripSeq.current
     setTrips((t) => [...t.slice(-6), { id, hops }])
-    const span = (Math.max(...hops.map((h) => h.at)) + 1) * HOP_MS + 200
-    setTimeout(() => setTrips((t) => t.filter((x) => x.id !== id)), span)
-  }
+    setTimeout(() => setTrips((t) => t.filter((x) => x.id !== id)), spanOf(hops))
+  }, [])
+
+  // The tour: while the map is on screen and nobody is pointing at it, the two flows replay in turn.
+  const [mapRef, inView] = useInView<HTMLElement>()
+  const [tour, setTour] = useState(true)
+  const touring = tour && inView && !reduced && !hover && !pinned && !focused
+  useEffect(() => {
+    if (!touring) return
+    let i = 0
+    let t: ReturnType<typeof setTimeout>
+    const step = () => {
+      const demo = DEMOS[i++ % DEMOS.length]!
+      launch(demo.hops)
+      t = setTimeout(step, spanOf(demo.hops) + 1400)
+    }
+    t = setTimeout(step, 500)
+    return () => clearTimeout(t)
+  }, [touring, launch])
 
   // Real traffic: every frame recorded after this page opened sends a packet along its wires.
   const frames = useTraffic((s) => s.frames)
@@ -166,7 +204,7 @@ export function SystemMap() {
     seen.current = frames[0]!.id
     // Bursts of refetches would flood the map; animate at most two per burst.
     for (const f of fresh.slice(0, 2).reverse()) launch(tripFor(f, side))
-  }, [frames, side])
+  }, [frames, side, launch])
 
   const related = active ? neighbours(active) : null
   const activeLinks = active ? new Set(linksOf(active)) : null
@@ -193,6 +231,7 @@ export function SystemMap() {
 
   return (
     <DiagramFrame
+      ref={mapRef}
       label="System map"
       minWidth={820}
       toolbar={
@@ -207,6 +246,15 @@ export function SystemMap() {
               {d.label}
             </button>
           ))}
+          <button
+            type="button"
+            onClick={() => setTour((v) => !v)}
+            aria-pressed={!tour}
+            aria-label={tour ? 'Pause the automatic replay' : 'Resume the automatic replay'}
+            className="pressable inline-flex size-8 items-center justify-center rounded-full text-text-secondary transition-colors duration-150 hover:bg-bg-muted hover:text-text [&_svg]:size-4"
+          >
+            {tour ? <Pause aria-hidden /> : <Play aria-hidden />}
+          </button>
           <span className="ms-auto">
             <SocketStatus />
           </span>
@@ -216,6 +264,12 @@ export function SystemMap() {
     >
       <svg viewBox="0 0 1100 560" className="h-auto w-full" aria-label="System map: devices, proxy, server, database and model">
         <Arrowheads />
+
+        {/* the server's outline sits under the wires, so every wire reaches its box */}
+        <rect x={570} y={30} width={290} height={500} rx={24} className="fill-bg-subtle stroke-border-strong" strokeDasharray="5 5" />
+        <text x={590} y={58} className="fill-text text-[13px] font-semibold">
+          Rust server (Axum, one process)
+        </text>
 
         {/* links first, so packets and nodes draw over them */}
         {(Object.keys(LINKS) as LinkId[]).map((id) => {
@@ -233,7 +287,12 @@ export function SystemMap() {
                 {...strokeFor(l.kind)}
               />
               {l.label && (
-                <text x={l.label[1]} y={l.label[2]} textAnchor={l.label[3] ?? 'middle'} className="fill-text-secondary text-[11px] font-medium">
+                <text
+                  x={l.label[1]}
+                  y={l.label[2]}
+                  textAnchor={l.label[3] ?? 'middle'}
+                  className="fill-text-secondary text-[11px] font-medium"
+                >
                   {l.label[0]}
                 </text>
               )}
@@ -245,27 +304,40 @@ export function SystemMap() {
         <g {...nodeProps('a')}>
           <rect x={20} y={60} width={220} height={150} rx={20} className="fill-hue-blue-pale" />
           <image href="/avatars/alice.webp" x={38} y={78} width={40} height={40} style={{ clipPath: 'inset(0 round 20px)' }} />
-          <text x={90} y={96} className="fill-text text-[13px] font-semibold">Device A · laptop</text>
-          <text x={90} y={113} className="fill-text-secondary text-[11.5px]">Alice, operator</text>
+          <text x={90} y={96} className="fill-text text-[13px] font-semibold">
+            Device A · laptop
+          </text>
+          <text x={90} y={113} className="fill-text-secondary text-[11.5px]">
+            Alice, operator
+          </text>
           <DeviceLines y={150} lines={['React app in a browser', 'Access token in memory', 'One WebSocket while open']} />
           {side === 'a' && <YouTag x={240} y={60} />}
         </g>
         <g {...nodeProps('b')}>
           <rect x={20} y={350} width={220} height={150} rx={20} className="fill-hue-gold-pale" />
           <image href="/avatars/bob.webp" x={38} y={368} width={40} height={40} style={{ clipPath: 'inset(0 round 20px)' }} />
-          <text x={90} y={386} className="fill-text text-[13px] font-semibold">Device B · phone</text>
-          <text x={90} y={403} className="fill-text-secondary text-[11.5px]">Bob, reviewer</text>
+          <text x={90} y={386} className="fill-text text-[13px] font-semibold">
+            Device B · phone
+          </text>
+          <text x={90} y={403} className="fill-text-secondary text-[11.5px]">
+            Bob, reviewer
+          </text>
           <DeviceLines y={440} lines={['Same app, mobile layout', 'Different machine, same Wi-Fi', 'Never talks to Device A']} />
           {side === 'b' && <YouTag x={240} y={350} />}
         </g>
 
         <g {...nodeProps('caddy')}>
-          <Box x={330} y={210} w={170} h={140} title="Caddy" lines={['Reverse proxy, :8080', 'Serves the web app', '/api → REST', '/ws → WebSocket']} tone="muted" />
+          <Box
+            x={330}
+            y={210}
+            w={170}
+            h={140}
+            title="Caddy"
+            lines={['Reverse proxy, :8080', 'Serves the web app', '/api → REST', '/ws → WebSocket']}
+            tone="muted"
+          />
         </g>
 
-        {/* server */}
-        <rect x={570} y={30} width={290} height={500} rx={24} className="fill-bg-subtle stroke-border-strong" strokeDasharray="5 5" />
-        <text x={590} y={58} className="fill-text text-[13px] font-semibold">Rust server (Axum, one process)</text>
         <g {...nodeProps('rest')}>
           <Box x={590} y={76} w={250} h={86} title="REST API" lines={['Accounts, users, history', 'Cases, runs, approvals, audit']} />
         </g>
@@ -273,7 +345,14 @@ export function SystemMap() {
           <Box x={590} y={174} w={250} h={86} title="Auth" lines={['Argon2id passwords, JWT access', 'Refresh cookie, 30 s WS ticket']} />
         </g>
         <g {...nodeProps('hub')}>
-          <Box x={590} y={272} w={250} h={86} title="WebSocket hub · Realtime Relay" lines={['Who is online, on which sockets', 'Push: message, typing, run, approval']} />
+          <Box
+            x={590}
+            y={272}
+            w={250}
+            h={86}
+            title="WebSocket hub · Realtime Relay"
+            lines={['Who is online, on which sockets', 'Push: message, typing, run, approval']}
+          />
         </g>
         <g {...nodeProps('worker')}>
           <Box
@@ -282,7 +361,12 @@ export function SystemMap() {
             w={250}
             h={140}
             title="Agent worker"
-            lines={['Run Orchestrator: state machine', 'Invoice Risk Analyst: model call', 'Approval Gatekeeper: human gate', 'Case Action Executor: runs once']}
+            lines={[
+              'Run Orchestrator: state machine',
+              'Invoice Risk Analyst: model call',
+              'Approval Gatekeeper: human gate',
+              'Case Action Executor: runs once',
+            ]}
             tone="ink"
           />
         </g>
@@ -290,12 +374,26 @@ export function SystemMap() {
         <g {...nodeProps('db')}>
           <ellipse cx={1000} cy={120} rx={78} ry={16} className="fill-hue-green-pale stroke-hue-green" strokeWidth={1.5} />
           <path d="M922 120v110c0 9 35 16 78 16s78-7 78-16V120" className="fill-hue-green-pale stroke-hue-green" strokeWidth={1.5} />
-          <text x={1000} y={170} textAnchor="middle" className="fill-text text-[13px] font-semibold">PostgreSQL</text>
-          <text x={1000} y={188} textAnchor="middle" className="fill-text-secondary text-[11.5px]">users, messages, cases,</text>
-          <text x={1000} y={205} textAnchor="middle" className="fill-text-secondary text-[11.5px]">runs, approvals, audit</text>
+          <text x={1000} y={170} textAnchor="middle" className="fill-text text-[13px] font-semibold">
+            PostgreSQL
+          </text>
+          <text x={1000} y={188} textAnchor="middle" className="fill-text-secondary text-[11.5px]">
+            users, messages, cases,
+          </text>
+          <text x={1000} y={205} textAnchor="middle" className="fill-text-secondary text-[11.5px]">
+            runs, approvals, audit
+          </text>
         </g>
         <g {...nodeProps('llm')}>
-          <Box x={922} y={390} w={160} h={104} title="Language model" lines={['Mock (default) or', 'LM Studio, OpenAI-', 'compatible, local']} tone="muted" />
+          <Box
+            x={922}
+            y={390}
+            w={160}
+            h={104}
+            title="Language model"
+            lines={['Mock (default) or', 'LM Studio, OpenAI-', 'compatible, local']}
+            tone="muted"
+          />
         </g>
 
         {/* keyboard focus ring, drawn on top */}
@@ -310,7 +408,23 @@ export function SystemMap() {
 
 /* ------------------------------------------------------------------ pieces */
 
-function Box({ x, y, w, h, title, lines = [], tone = 'surface' }: { x: number; y: number; w: number; h: number; title: string; lines?: string[]; tone?: 'surface' | 'muted' | 'ink' }) {
+function Box({
+  x,
+  y,
+  w,
+  h,
+  title,
+  lines = [],
+  tone = 'surface',
+}: {
+  x: number
+  y: number
+  w: number
+  h: number
+  title: string
+  lines?: string[]
+  tone?: 'surface' | 'muted' | 'ink'
+}) {
   const fill = tone === 'ink' ? 'fill-ink' : tone === 'muted' ? 'fill-bg-muted' : 'fill-bg-surface'
   const text = tone === 'ink' ? 'fill-text-on-ink' : 'fill-text'
   const sub = tone === 'ink' ? 'fill-text-on-ink opacity-70' : 'fill-text-secondary'
@@ -349,7 +463,19 @@ function YouTag({ x, y }: { x: number; y: number }) {
 }
 
 function FocusRing({ box: [x, y, w, h] }: { box: [number, number, number, number] }) {
-  return <rect x={x - 5} y={y - 5} width={w + 10} height={h + 10} rx={22} fill="none" className="stroke-focus" strokeWidth={2.5} pointerEvents="none" />
+  return (
+    <rect
+      x={x - 5}
+      y={y - 5}
+      width={w + 10}
+      height={h + 10}
+      rx={22}
+      fill="none"
+      className="stroke-focus"
+      strokeWidth={2.5}
+      pointerEvents="none"
+    />
+  )
 }
 
 /** One dot running along one wire, measured from the wire's own path. */
@@ -375,17 +501,35 @@ function Packet({ hop }: { hop: Hop }) {
     raf = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(raf)
   }, [hop])
-  return <circle ref={ref} r={6} className={cn(PACKET_FILL[LINKS[hop.link].kind], 'stroke-bg-surface')} strokeWidth={2.5} style={{ opacity: 0 }} pointerEvents="none" />
+  return (
+    <circle
+      ref={ref}
+      r={6}
+      className={cn(PACKET_FILL[LINKS[hop.link].kind], 'stroke-bg-surface')}
+      strokeWidth={2.5}
+      style={{ opacity: 0 }}
+      pointerEvents="none"
+    />
+  )
 }
 
-const STATUS_TEXT = { connected: 'Live', connecting: 'Connecting', reconnecting: 'Reconnecting', offline: 'Offline', idle: 'Not connected' } as const
+const STATUS_TEXT = {
+  connected: 'Live',
+  connecting: 'Connecting',
+  reconnecting: 'Reconnecting',
+  offline: 'Offline',
+  idle: 'Not connected',
+} as const
 
 function SocketStatus() {
   const status = useRealtimeStore((s) => s.wsStatus)
   const live = status === 'connected'
   return (
     <span className="inline-flex items-center gap-2 text-13 text-text-secondary">
-      <span className={cn('size-2 rounded-full', live ? 'bg-success-solid' : status === 'offline' ? 'bg-danger-solid' : 'bg-warning-solid')} aria-hidden />
+      <span
+        className={cn('size-2 rounded-full', live ? 'bg-success-solid' : status === 'offline' ? 'bg-danger-solid' : 'bg-warning-solid')}
+        aria-hidden
+      />
       Your socket: {STATUS_TEXT[status]}
     </span>
   )
@@ -483,8 +627,12 @@ function TrafficLog() {
 
 function Chip({ channel }: { channel: 'rest' | 'ws' }): ReactNode {
   return channel === 'rest' ? (
-    <span className="inline-flex h-5 w-11 shrink-0 items-center justify-center rounded-full bg-ink text-[10.5px] font-medium text-text-on-ink">REST</span>
+    <span className="inline-flex h-5 w-11 shrink-0 items-center justify-center rounded-full bg-ink text-[10.5px] font-medium text-text-on-ink">
+      REST
+    </span>
   ) : (
-    <span className="inline-flex h-5 w-11 shrink-0 items-center justify-center rounded-full bg-accent-subtle text-[10.5px] font-medium text-accent-text">WS</span>
+    <span className="inline-flex h-5 w-11 shrink-0 items-center justify-center rounded-full bg-accent-subtle text-[10.5px] font-medium text-accent-text">
+      WS
+    </span>
   )
 }

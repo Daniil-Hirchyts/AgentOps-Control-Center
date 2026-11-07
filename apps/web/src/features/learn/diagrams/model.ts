@@ -1,5 +1,5 @@
 /** Non-component helpers for the Learn diagrams: line styles, motion hooks, the step player. */
-import { useEffect, useState } from 'react'
+import { useEffect, useEffectEvent, useState } from 'react'
 import { useMediaQuery } from '@/lib/hooks'
 
 export type Kind = 'rest' | 'ws' | 'sql' | 'llm' | 'internal'
@@ -31,43 +31,87 @@ export function useReducedMotion() {
   return useMediaQuery('(prefers-reduced-motion: reduce)')
 }
 
-/** Steps through `total` frames. `index` -1 means "everything at rest, nothing highlighted". */
-export function usePlayer(total: number, interval = 1700) {
+/** True while at least `threshold` of the element is on screen. Attach `ref` to the element. */
+export function useInView<T extends Element>(threshold = 0.35) {
+  const [el, setEl] = useState<T | null>(null)
+  const [inView, setInView] = useState(false)
+  useEffect(() => {
+    if (!el || typeof IntersectionObserver === 'undefined') return
+    const io = new IntersectionObserver(([entry]) => setInView(Boolean(entry?.isIntersecting)), { threshold })
+    io.observe(el)
+    return () => io.disconnect()
+  }, [el, threshold])
+  return [setEl, inView] as const
+}
+
+/**
+ * Steps through `total` frames. `index` -1 means "everything at rest, nothing highlighted".
+ *
+ * It starts by itself once the diagram is on screen and loops until the reader takes over:
+ * pause, step or pick a step and it stays where they left it (Play loops again). Off screen,
+ * or while `suspended` (the reader is pointing at a part), it waits. With reduced motion it
+ * never starts by itself.
+ */
+export function usePlayer(total: number, interval = 1700, opts: { suspended?: boolean; onLoop?: (auto: boolean) => void } = {}) {
+  const reduced = useReducedMotion()
+  const [attach, inView] = useInView<HTMLElement>()
   const [index, setIndex] = useState(-1)
-  const [playing, setPlaying] = useState(false)
+  const [held, setHeld] = useState(false)
+  const [wantPlay, setWantPlay] = useState(false)
+  const running = inView && !opts.suspended && (held ? wantPlay : !reduced)
+
+  const loopEvent = useEffectEvent((auto: boolean) => opts.onLoop?.(auto))
 
   useEffect(() => {
-    if (!playing) return
-    const t = setTimeout(() => {
-      if (index >= total - 1) setPlaying(false)
-      else setIndex(index + 1)
-    }, index < 0 ? 0 : interval)
+    if (!running) return
+    const last = index >= total - 1
+    // Hold the last step a little longer, so the whole flow can be read before it starts over.
+    const t = setTimeout(
+      () => {
+        if (last) {
+          setIndex(0)
+          loopEvent(!held)
+        } else setIndex(index + 1)
+      },
+      index < 0 ? 400 : last ? interval * 2 : interval,
+    )
     return () => clearTimeout(t)
-  }, [playing, index, total, interval])
+  }, [running, index, total, interval, held])
+
+  const takeOver = (play: boolean) => {
+    setHeld(true)
+    setWantPlay(play)
+  }
 
   return {
+    /** Callback ref for the diagram frame: playback runs only while it is on screen. */
+    attach,
     index,
-    playing,
+    playing: running,
+    /** Still playing by itself: the reader has not taken over. */
+    auto: !held,
     total,
-    play: () => {
-      if (index >= total - 1) setIndex(-1)
-      setPlaying(true)
+    play: () => takeOver(true),
+    pause: () => takeOver(false),
+    /** Start from the first step and play, e.g. after picking another path. */
+    restart: () => {
+      takeOver(true)
+      setIndex(-1)
     },
-    pause: () => setPlaying(false),
     next: () => {
-      setPlaying(false)
+      takeOver(false)
       setIndex((i) => Math.min(total - 1, i + 1))
     },
     prev: () => {
-      setPlaying(false)
+      takeOver(false)
       setIndex((i) => Math.max(0, i - 1))
     },
     reset: () => {
-      setPlaying(false)
+      takeOver(false)
       setIndex(-1)
     },
     go: (i: number) => {
-      setPlaying(false)
+      takeOver(false)
       setIndex(i)
     },
   }

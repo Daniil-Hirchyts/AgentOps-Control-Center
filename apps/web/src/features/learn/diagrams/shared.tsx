@@ -4,7 +4,7 @@
  * Every diagram is SVG drawn with theme tokens, so it follows light and dark mode.
  */
 import { ChevronLeft, ChevronRight, Pause, Play, RotateCcw } from 'lucide-react'
-import type { KeyboardEvent, ReactNode } from 'react'
+import type { KeyboardEvent, ReactNode, Ref } from 'react'
 import { cn } from '@/lib/utils'
 import { type Kind, PACKET_FILL, type Player, strokeFor } from './model'
 
@@ -12,8 +12,19 @@ export function Arrowheads() {
   return (
     <defs>
       {(Object.keys(PACKET_FILL) as Kind[]).map((k) => (
-        <marker key={k} id={`ah-${k}`} viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-          <path d="M0 0 10 5 0 10z" className={PACKET_FILL[k]} />
+        <marker
+          key={k}
+          id={`ah-${k}`}
+          viewBox="0 0 10 10"
+          refX="8.5"
+          refY="5"
+          markerUnits="userSpaceOnUse"
+          markerWidth="10"
+          markerHeight="10"
+          orient="auto-start-reverse"
+        >
+          {/* Fixed size: a lit (thicker) wire keeps the same head. */}
+          <path d="M0 1 9.5 5 0 9 2 5z" className={PACKET_FILL[k]} />
         </marker>
       ))}
     </defs>
@@ -28,7 +39,9 @@ export function DiagramFrame({
   minWidth = 720,
   label,
   className,
+  ref,
 }: {
+  ref?: Ref<HTMLElement>
   children: ReactNode
   toolbar?: ReactNode
   footer?: ReactNode
@@ -37,7 +50,7 @@ export function DiagramFrame({
   className?: string
 }) {
   return (
-    <figure className={cn('surface overflow-hidden rounded-2xl', className)} aria-label={label}>
+    <figure ref={ref} className={cn('surface overflow-hidden rounded-2xl', className)} aria-label={label}>
       {toolbar && <div className="flex flex-wrap items-center gap-2 border-b border-separator px-4 py-2.5 sm:px-6">{toolbar}</div>}
       <div className="scrollbar-none overflow-x-auto overscroll-x-contain p-4 sm:p-6">
         <div style={{ minWidth }}>{children}</div>
@@ -67,7 +80,7 @@ const iconBtn =
   'pressable inline-flex size-8 items-center justify-center rounded-full text-text-secondary transition-colors duration-150 hover:bg-bg-muted hover:text-text disabled:opacity-40 disabled:hover:bg-transparent [&_svg]:size-4'
 
 /** Play, pause and step controls. Arrow keys step while the toolbar has focus. */
-export function PlayerControls({ player, label }: { player: Player; label: string }) {
+export function PlayerControls({ player, label }: { player: Omit<Player, 'attach'>; label: string }) {
   const { index, total, playing } = player
   const onKey = (e: KeyboardEvent) => {
     if (e.key === 'ArrowRight') {
@@ -86,7 +99,7 @@ export function PlayerControls({ player, label }: { player: Player; label: strin
         className="pressable inline-flex h-8 items-center gap-1.5 rounded-full bg-ink ps-2.5 pe-3.5 text-13 font-medium text-text-on-ink transition-colors duration-150 hover:bg-ink-hover [&_svg]:size-3.5"
       >
         {playing ? <Pause aria-hidden fill="currentColor" /> : <Play aria-hidden fill="currentColor" />}
-        {playing ? 'Pause' : index >= total - 1 ? 'Replay' : index >= 0 ? 'Resume' : 'Play'}
+        {playing ? 'Pause' : index >= 0 ? 'Resume' : 'Play'}
       </button>
       <button type="button" onClick={player.prev} disabled={index <= 0} className={iconBtn} aria-label="Previous step">
         <ChevronLeft aria-hidden />
@@ -103,4 +116,3 @@ export function PlayerControls({ player, label }: { player: Player; label: strin
     </div>
   )
 }
-
