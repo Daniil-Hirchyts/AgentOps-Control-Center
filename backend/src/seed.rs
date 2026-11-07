@@ -62,6 +62,42 @@ fn demo_cases() -> Vec<(&'static str, InvoiceInput)> {
                 historical_average: Some(5_900.0),
             },
         ),
+        (
+            "Tailspin Robotics — first invoice from a new vendor",
+            InvoiceInput {
+                invoice_number: "TR-0001".into(),
+                vendor: "Tailspin Robotics SAS".into(),
+                amount: 12_500.0,
+                currency: "EUR".into(),
+                issue_date: d(11, 3),
+                description: "Pick-and-place arm, deposit 50% — no purchase history (synthetic demo data)".into(),
+                historical_average: None,
+            },
+        ),
+        (
+            "Adatum Consulting — same amount billed twice?",
+            InvoiceInput {
+                invoice_number: "ADC-7731".into(),
+                vendor: "Adatum Consulting".into(),
+                amount: 9_600.0,
+                currency: "EUR".into(),
+                issue_date: d(11, 4),
+                description: "Workshop facilitation, 4 days. Same total as ADC-7712 last week (synthetic demo data)".into(),
+                historical_average: Some(9_400.0),
+            },
+        ),
+        (
+            "Litware Telecom — model timeout drill",
+            InvoiceInput {
+                invoice_number: "LW-2210".into(),
+                vendor: "Litware Telecom".into(),
+                amount: 860.0,
+                currency: "EUR".into(),
+                issue_date: d(11, 5),
+                description: "Mobile plans, November. Drill for the failure path [mock:timeout] (synthetic demo data)".into(),
+                historical_average: Some(840.0),
+            },
+        ),
     ]
 }
 

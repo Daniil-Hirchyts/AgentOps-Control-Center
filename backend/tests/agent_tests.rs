@@ -677,7 +677,7 @@ async fn seed_is_idempotent(pool: PgPool) {
     let r1 = agentops::seed::run(&pool, "demo-password-123")
         .await
         .unwrap();
-    assert_eq!((r1.users_created, r1.cases_created), (4, 3));
+    assert_eq!((r1.users_created, r1.cases_created), (4, 6));
     let r2 = agentops::seed::run(&pool, "demo-password-123")
         .await
         .unwrap();
