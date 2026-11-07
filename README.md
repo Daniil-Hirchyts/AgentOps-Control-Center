@@ -6,7 +6,7 @@
 
 Instant messaging between two devices, extended into a console where people approve what an AI agent wants to do.
 
-[Report (FR)](docs/report/rapport.pdf) · [Architecture](docs/architecture.md) · [API](docs/api.md) · [Assignment coverage](#assignment-coverage) · [Run it](#run-it)
+[Architecture](docs/architecture.md) · [API](docs/api.md) · [Assignment coverage](#assignment-coverage) · [Run it](#run-it)
 
 <img src="docs/screenshots/demo-two-devices.png" alt="The same conversation open on a laptop as Alice and on a phone as Bob" width="960"/>
 
@@ -28,7 +28,7 @@ WebSocket and history over REST. AgentOps builds that, then uses it for a concre
   `/learn/architecture` walks through the servers, REST vs WebSocket and the approval loop with live diagrams.
 
 This is an MVP. The invoice case is simulated, the model is a mock by default, there are two fixed roles and a single
-server instance; these simplifications are deliberate and listed in the report.
+server instance; these simplifications are deliberate.
 
 Stack: Rust (Axum, Tokio, SQLx) · PostgreSQL 17 · React + Vite + TypeScript · Docker Compose · Caddy.
 
@@ -126,8 +126,7 @@ The [development guide](docs/development.md) covers the
 | [`contracts/`](contracts) | [`CONTRACT.md`](contracts/CONTRACT.md), the API, WebSocket and state machine contract, and the OpenAPI file |
 | [`tests/e2e/`](tests/e2e) | Playwright tests with two browser contexts |
 | [`infra/`](infra) | Dockerfiles and the Caddy configuration |
-| [`docs/`](docs) | [Architecture](docs/architecture.md), [API reference](docs/api.md), [development guide](docs/development.md) |
-| [`docs/report/`](docs/report) | French report: [PDF](docs/report/rapport.pdf) and LaTeX source |
+| [`docs/`](docs) | [Architecture](docs/architecture.md), [API reference](docs/api.md), [development guide](docs/development.md), screenshots |
 
 ## Authors
 
@@ -135,4 +134,4 @@ Daniil Hirchyts and Mattéo Louet, for API et Web Services at EFREI Paris, ING2 
 
 ## License
 
-Academic project, written for coursework. Not licensed for production use. All demo accounts and data are synthetic.
+[MIT](LICENSE). All demo accounts and data are synthetic.
