@@ -2,7 +2,7 @@
 
 AgentOps Control Center is a client–server application. Every client (desktop browser, phone browser) talks to a single
 Rust backend; clients never talk to each other. The backend owns all state in PostgreSQL and is the only component that
-calls the local LLM (LM Studio).
+calls the LLM (any OpenAI-compatible API, or a deterministic mock).
 
 The API contract that both sides implement is [`contracts/CONTRACT.md`](../contracts/CONTRACT.md). This document explains
 how the pieces fit together and why. A standalone diagram is available as [`architecture.svg`](architecture.svg).
@@ -30,7 +30,7 @@ flowchart LR
     end
 
     DB[("PostgreSQL 17")]
-    LMS["LM Studio on host<br/>OpenAI-compatible :1234"]
+    LMS["LLM provider<br/>OpenAI-compatible API"]
 
     D -- "HTTPS / WSS" --> V
     P -- "HTTP(S) / WS(S) over LAN" --> V
@@ -43,7 +43,7 @@ flowchart LR
     REST -- "enqueue run" --> WORK
     WORK --> DB
     WORK --> LLM
-    LLM -- "localhost only" --> LMS
+    LLM -- "HTTP" --> LMS
     WORK -- "agent_status, approval_* events" --> WS
 ```
 
@@ -69,8 +69,8 @@ ASCII fallback:
              | SQLx (pool)               | reqwest
              v                           v
       +-------------+          +--------------------+
-      | PostgreSQL  |          | LM Studio (host,   |
-      |             |          | never public)      |
+      | PostgreSQL  |          | LLM provider       |
+      |             |          | (OpenAI-compatible)|
       +-------------+          +--------------------+
 ```
 
@@ -99,20 +99,20 @@ socket having been open when the event happened.
 
 ## 3. Backend module map
 
-The backend is a single crate (`backend/`, binary `agentops`, plus `seed` and `export_openapi`). Indicative layout:
+The backend is a single crate (`backend/`, binary `agentops`, plus `seed` and `export_openapi`):
 
 | Module | Responsibility |
 |---|---|
-| `config` | Reads env (`DATABASE_URL`, `JWT_SECRET`, `ALLOWED_ORIGINS`, `LLM_*`, TTLs) and validates it at startup |
-| `db` | SQLx pool, `sqlx::migrate!` at startup (migrations are embedded in the binary) |
-| `error` | `AppError` → `{"error": {"code", "message"}}` with the status codes from the contract |
-| `auth` | Argon2id hashing, JWT issue/verify (access + WS ticket audiences), refresh-token rotation, extractors for `CurrentUser` and role guards |
-| `users`, `messages` | University endpoints `/api/comptes`, `/api/utilisateurs`, `/api/messages/{id}` |
-| `ws` | Upgrade handler (ticket + Origin check), per-connection read/write tasks, connection registry `user_id → senders`, presence, typing, rate limit, heartbeat |
-| `cases`, `agent_runs`, `approvals`, `audit` | AgentOps REST resources with per-record authorization |
-| `agent` | Worker, state-machine transitions, action executor, startup recovery |
-| `llm` | `LlmClient` trait with `LmStudioClient` (reqwest, OpenAI-compatible `/chat/completions`) and `MockLlmClient`; output parsing and validation |
-| `openapi` | Utoipa `ApiDoc`, Swagger UI at `/api/docs` |
+| `config`, `state` | Reads and validates the environment at startup, shared application state |
+| `api` | Router, CORS, body limit, health, OpenAPI document and Swagger UI at `/api/docs` |
+| `error`, `extract` | `AppError` → `{"error": {"code", "message"}}` with the status codes from the contract |
+| `auth` | Argon2id hashing, JWT (access token and WS ticket), refresh-token rotation, current-user extractor and role guard |
+| `users`, `messaging` | University endpoints `/api/comptes`, `/api/utilisateurs`, `/api/messages/{id}` |
+| `websocket` | Upgrade (ticket + Origin check), connection registry `user_id → senders`, presence, typing, rate limit, heartbeat |
+| `cases`, `approvals`, `audit` | AgentOps REST resources with per-record authorization |
+| `agents` | State machine, race-safe transitions, worker, startup recovery |
+| `actions` | Allowlisted actions, executed exactly once |
+| `llm` | `LlmProvider` trait with an OpenAI-compatible provider and a deterministic mock; output parsing and validation |
 
 The frontend (`apps/web/`) is a React + Vite SPA: TanStack Router for routes, TanStack Query for REST data and caching,
 Zustand for the session (access token in memory) and socket state, Tailwind + shadcn/ui for components.
@@ -242,7 +242,7 @@ sequenceDiagram
     actor Alice as Alice (OPERATOR, laptop)
     participant API as Backend REST
     participant W as Agent worker
-    participant L as LM Studio / mock
+    participant L as LLM provider / mock
     participant DB as PostgreSQL
     participant Hub as WS hub
     actor Bob as Bob (REVIEWER, phone)
@@ -333,7 +333,7 @@ double click or a restart during execution can never run the action twice. Decis
   executed action.
 - Invoice text is untrusted input to the prompt. It can at worst change the recommendation, which a human still reviews,
   and it cannot introduce a new action.
-- LM Studio is reached on localhost (or `host.docker.internal`) and must never be exposed on a public interface.
+- A local LLM server (LM Studio) stays on localhost; a hosted provider is reached with an API key kept in `.env`.
 
 **Transport limits.** WebSocket frames ≤ 16 KiB, message content ≤ 4000 characters, 10 messages per 5 s per connection,
 ping every 25 s, idle close after 60 s. Request bodies are size-limited.

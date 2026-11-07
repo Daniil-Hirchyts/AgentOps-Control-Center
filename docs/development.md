@@ -1,16 +1,16 @@
 # Development guide
 
-This guide covers local setup, LM Studio, tests, and the two-device demo used for the course presentation.
+This guide covers local setup, the LLM, tests, and the two-device demo used for the course presentation.
 
 ## 1. Prerequisites
 
 | Tool | Version used | Notes |
 |---|---|---|
 | Rust | 1.92 (edition 2024) | `rustup` recommended |
-| Node.js | 24 LTS or newer (26 on the dev machine) | |
+| Node.js | 24 LTS or newer | |
 | pnpm | 9 | `corepack enable` (Node ≤ 24) or `npm i -g pnpm@9` |
 | Docker Desktop | recent | for PostgreSQL; full-stack images optional |
-| LM Studio | recent | only for `LLM_MODE=real` |
+| LLM | any OpenAI-compatible API | only for `LLM_MODE=real` (LM Studio locally, or a hosted provider) |
 | Optional | `jq`, `websocat`, `sqlx-cli` | API examples, WS testing, manual migrations |
 
 ## 2. Local setup (host processes, recommended)
@@ -74,22 +74,20 @@ Reset the database: `docker compose down -v && docker compose up -d postgres`, t
 | `LLM_PROVIDER` | `lmstudio` | informational, shown in `/api/health` |
 | `LLM_BASE_URL` | `http://localhost:1234/v1` | OpenAI-compatible endpoint |
 | `LLM_MODEL` | empty | model id; empty = first model returned by `/v1/models` |
-| `LLM_API_KEY` | empty | LM Studio ignores it; kept for compatibility |
+| `LLM_API_KEY` | empty | needed by hosted providers; ignored by LM Studio |
 | `LLM_TIMEOUT_SECONDS` | `120` | per-request timeout |
-| `LLM_MODE` | `mock` | `mock` (deterministic, no LM Studio) or `real` |
+| `LLM_MODE` | `mock` | `mock` (deterministic, no model needed) or `real` |
 
 Docker-only overrides (see section 7): `WEB_PORT`, `WEB_HTTPS_PORT`, `SITE_ADDRESS`, `DOCKER_LLM_BASE_URL`,
 `DOCKER_ALLOWED_ORIGINS`.
 
-## 4. LM Studio (real LLM mode)
+## 4. Real LLM mode
 
-The default `LLM_MODE=mock` needs nothing else and is what CI and the automated tests use. For the live demo with a
-real local model:
+The default `LLM_MODE=mock` needs nothing else and is what CI and the automated tests use. In real mode the backend
+talks to any OpenAI-compatible API. For a hosted provider, set `LLM_BASE_URL`, `LLM_API_KEY` and `LLM_MODEL` and go to
+step 4. The steps below use LM Studio, the default local setup:
 
-1. Install LM Studio and download a **text instruct model**. Good choices are 7–8B instruct models in GGUF format,
-   for example Qwen2.5-7B-Instruct, Llama-3.1-8B-Instruct or Mistral-7B-Instruct, at Q4_K_M or Q5_K_M quantization.
-   The model must handle JSON / structured output well. An OCR or vision model is not suitable: the backend sends text
-   and expects a JSON object back.
+1. Install LM Studio and download an instruct model that returns JSON reliably (for example Qwen2.5-7B-Instruct).
 2. Load the model in LM Studio (or `lms load <model>`).
 3. Start the local server:
 
@@ -106,7 +104,7 @@ real local model:
    curl -s http://localhost:8080/api/llm/models -H "Authorization: Bearer $TOKEN"   # as an OPERATOR
    ```
 
-If LM Studio is stopped or the model produces invalid output twice, the run ends in `FAILED` with an `llm_error` or
+If the LLM is unreachable or the model produces invalid output twice, the run ends in `FAILED` with an `llm_error` or
 `llm_response_invalid` audit event. It is never approved automatically.
 
 Keep LM Studio bound to localhost. Do not enable "serve on local network" on an untrusted network, and never forward
@@ -181,7 +179,7 @@ Alternative: the Docker full stack (section 7) publishes port 8080 on all interf
 
 ### 6.2 Demo script
 
-Before starting: database seeded, `LLM_MODE=mock` (or `real` with LM Studio warmed up by one test request), laptop
+Before starting: database seeded, `LLM_MODE=mock` (or `real` with the model warmed up by one test request), laptop
 logged in as **alice**, phone logged in as **bob**.
 
 **Scenario A — instant messaging**
@@ -223,9 +221,9 @@ logged in as **alice**, phone logged in as **bob**.
 4. Optional: restart the backend during a pending approval. After restart the run is still AWAITING_APPROVAL and bob can
    still decide it.
 
-### 6.3 Screenshot checklist for the report
+### 6.3 Screenshots and report
 
-Automated captures (synthetic data, desktop 1440×900 + phone 390×844) are regenerated with:
+Automated captures (synthetic data) are regenerated with:
 
 ```bash
 cd backend && cargo run --bin seed      # once, on a clean database
@@ -237,20 +235,14 @@ This writes `desktop-messaging.png`, `mobile-messaging.png`, `desktop-run-awaiti
 `desktop-concept.png`, `desktop-architecture.png` and `swagger-ui.png` into
 `docs/screenshots/`.
 
-The report figures `demo-two-devices.png` and `mockup-*.png` (agent run, approval detail, Concept and Architecture
-pages) are the same screens captured at MacBook Pro 14" (1512×982 @2x) and iPhone 18 Pro (402×874 @3x) resolutions and placed in
-Apple's product bezels (Apple Design Resources, not stored in the repository).
+The report figures `demo-two-devices.png` and `mockup-*.png` show the same screens inside laptop and phone frames
+(Apple Design Resources, not stored in the repository).
 
 The report itself is LaTeX, in `docs/report/`:
 
 ```bash
 cd docs/report && pdflatex rapport.tex && pdflatex rapport.tex   # second run fills in the table of contents
 ```
-
-Optional, by hand during the physical demo:
-
-- [ ] phone: messages recovered after airplane mode / reconnection
-- [ ] green GitHub Actions run (optional)
 
 ## 7. Docker full stack
 
@@ -281,7 +273,7 @@ docker compose --profile test run --rm e2e            # Playwright (Chromium) ag
 
 The E2E report is written to `tests/e2e/playwright-report/`.
 
-### LM Studio from inside Docker
+### Local LLM from inside Docker
 
 The backend container reaches the host through `host.docker.internal` (the compose file sets
 `LLM_BASE_URL=http://host.docker.internal:1234/v1`; override with `DOCKER_LLM_BASE_URL`).
@@ -308,6 +300,6 @@ LM Studio then stays on `127.0.0.1` and is never exposed. Use the Docker full st
 | WebSocket stays disconnected, upgrade 403 | origin not allowed; add it to `ALLOWED_ORIGINS` |
 | WebSocket 401 | ticket expired (30 s) or reused after a long pause; the client should fetch a new one per connection |
 | Phone cannot open the page | different Wi-Fi / client isolation, macOS firewall blocked `node`, Vite started without `--host` |
-| Runs always `FAILED` with real LLM | LM Studio server not started, no model loaded, wrong `LLM_MODEL`, or the model is too weak for JSON output |
+| Runs always `FAILED` with real LLM | LLM server not started, no model loaded, wrong `LLM_MODEL`, or the model is too weak for JSON output |
 | Port 5432 already in use | another local PostgreSQL; stop it or change the published port |
 | Port 8080 in use by Docker `web` | a host backend is running; stop it or set `WEB_PORT` |

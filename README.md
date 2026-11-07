@@ -1,22 +1,21 @@
 # AgentOps Control Center
 
 A platform for supervising and validating AI agents (university project, course *API and Web Services*).
-An AI agent carries out tasks, asks for validation when an action is sensitive, and two operators discuss it in
+An AI agent carries out tasks, asks for validation when an action is sensitive, and an operator and a reviewer discuss it in
 real time to authorize or reject the action.
 
 Concepts: agentic AI, human-in-the-loop, tool calling, observability, WebSocket.
 
-- **Agents and approvals:** an operator submits an invoice; an agent (any OpenAI-compatible model, LM Studio by default, or a deterministic mock) assesses the
-  risk and proposes an action through a tool call; a reviewer approves or rejects it in real time from another device;
-  the approved action is executed exactly once and every step is audited.
+- **Agents and approvals:** an operator submits an invoice; an agent (any OpenAI-compatible model, or a deterministic
+  mock) assesses the risk and proposes an action through a tool call; a reviewer approves or rejects it in real time
+  from another device; the approved action is executed exactly once and every step is audited.
 - **Real-time collaboration:** accounts, JWT login, user list with live presence, messages over WebSocket with
   history over REST, offline recipients and a typing indicator, so the operator and the reviewer can talk the
   decision over. Demonstrated between a laptop and a phone.
 - **Learn pages in the app:** `/learn/concept` explains what is simulated and what each demo case is for;
   `/learn/architecture` walks through the servers, REST vs WebSocket and the approval loop with diagrams.
 
-Stack: Rust (Axum, Tokio, SQLx, Utoipa, Argon2id, jsonwebtoken) · PostgreSQL 17 · React + Vite + TypeScript
-(TanStack Router/Query, Zustand, Tailwind, shadcn/ui, prompt-kit, motion-primitives) · LM Studio · Docker Compose · Caddy · GitHub Actions.
+Stack: Rust (Axum, Tokio, SQLx) · PostgreSQL 17 · React + Vite + TypeScript · Docker Compose · Caddy.
 
 ![Architecture](docs/architecture.svg)
 
@@ -31,7 +30,7 @@ Stack: Rust (Axum, Tokio, SQLx, Utoipa, Argon2id, jsonwebtoken) · PostgreSQL 17
 | Message history over REST | `GET /api/messages/{utilisateurId}` with `limit` / `beforeId` |
 | Offline recipients | messages persisted before delivery, refetched over REST on reconnect |
 | Presence | in-memory connection registry, `user_presence` events |
-| WebSocket security | short-lived WS ticket (aud `ws`), Origin check, frame size and rate limits |
+| WebSocket security | short-lived WS ticket, Origin check, frame size and rate limits |
 | Persistence | PostgreSQL, SQLx, embedded migrations |
 | Two-device demo | [`docs/development.md` §6](docs/development.md#6-two-device-demo) |
 | Bonus: OpenAPI / Swagger | Utoipa, `/api/openapi.json`, `/api/docs` |
@@ -46,7 +45,7 @@ Stack: Rust (Axum, Tokio, SQLx, Utoipa, Argon2id, jsonwebtoken) · PostgreSQL 17
 - Rust 1.92+ (edition 2024)
 - Node.js 24+ and pnpm 9
 - Docker Desktop (the Docker quick start needs nothing else)
-- Optional: LM Studio (real LLM mode), `jq`, `websocat`
+- Optional: an OpenAI-compatible LLM (real mode), `jq`, `websocat`
 
 ## Quick start (Docker, everything)
 
@@ -126,6 +125,7 @@ All variables live in `.env` (copy from `.env.example`). Full descriptions in
 | `COOKIE_SECURE` | `false` | `true` only behind HTTPS |
 | `LLM_MODE` | `mock` | `mock` or `real` |
 | `LLM_BASE_URL` | `http://localhost:1234/v1` | OpenAI-compatible endpoint (LM Studio by default) |
+| `LLM_API_KEY` | empty | API key, for hosted providers |
 | `LLM_MODEL` | empty | model id, empty = first available |
 | `LLM_TIMEOUT_SECONDS` | `120` | LLM request timeout |
 | `RUST_LOG` | `agentops=info,tower_http=info` | log filter |
@@ -145,19 +145,20 @@ container, and uploads the Playwright report as an artifact.
 ## Two-device demo
 
 Laptop and phone on the same Wi-Fi, `pnpm dev --host`, open `http://<laptop-LAN-IP>:5173` on the phone.
-Step-by-step script (messaging, approval, rejection, reconnection) and screenshot checklist:
+Step-by-step script (messaging, approval, rejection, reconnection):
 [`docs/development.md` §6](docs/development.md#6-two-device-demo).
 
-## LM Studio (real LLM)
+## Real LLM
 
-1. Load a text instruct model that handles JSON output (e.g. Qwen2.5-7B-Instruct, Llama-3.1-8B-Instruct,
-   Mistral-7B-Instruct, GGUF Q4_K_M). Vision/OCR models are not suitable.
-2. `lms server start` (serves `http://localhost:1234/v1`).
-3. In `.env`: `LLM_MODE=real`, optionally `LLM_MODEL=<id>`; restart the backend.
-4. Check `GET /api/health` and `GET /api/llm/models`.
+Any OpenAI-compatible API works: a local server such as LM Studio, or a hosted provider.
+
+1. Use an instruct model that handles JSON output.
+2. In `.env`: `LLM_MODE=real`, `LLM_BASE_URL`, and `LLM_API_KEY` / `LLM_MODEL` if the provider needs them; restart
+   the backend.
+3. Check `GET /api/health` and `GET /api/llm/models`.
 
 LLM failures (server down, timeout, invalid output after 2 attempts) put the run in `FAILED`; nothing is ever
-approved or executed automatically. Keep LM Studio on localhost and never expose port 1234 publicly.
+approved or executed automatically. A local server should stay on localhost.
 
 ## Docker details
 
@@ -171,8 +172,7 @@ approved or executed automatically. Keep LM Studio on localhost and never expose
 | `e2e` (profile `test`) | `infra/docker/e2e.Dockerfile` | Playwright runner targeting `http://web` |
 
 Set `SITE_ADDRESS` to a public domain for automatic HTTPS (then also `COOKIE_SECURE=true`). The containerised backend
-reaches LM Studio via `host.docker.internal`, which depends on how LM Studio is bound. For real-LLM demos, running the
-backend on the host is simpler; see [`docs/development.md` §7](docs/development.md#lm-studio-from-inside-docker).
+reaches a local LLM server via `host.docker.internal`; running the backend on the host is simpler, see [`docs/development.md` §7](docs/development.md#local-llm-from-inside-docker).
 
 ## Troubleshooting
 
@@ -182,7 +182,7 @@ backend on the host is simpler; see [`docs/development.md` §7](docs/development
 | Logged out after every reload | `COOKIE_SECURE=true` on plain HTTP; set `false` |
 | WebSocket disconnected, upgrade 403 | add the page origin to `ALLOWED_ORIGINS` |
 | Phone cannot reach the laptop | same Wi-Fi without client isolation, `pnpm dev --host`, allow `node` in the macOS firewall |
-| Agent runs always `FAILED` | LM Studio server not started / no model loaded / wrong `LLM_MODEL`; try `LLM_MODE=mock` |
+| Agent runs always `FAILED` | LLM server unreachable / no model loaded / wrong `LLM_MODEL`; try `LLM_MODE=mock` |
 | Port 8080 busy | a host backend is running; stop it or set `WEB_PORT=8088` |
 
 More in [`docs/development.md`](docs/development.md#8-troubleshooting).
@@ -192,7 +192,7 @@ More in [`docs/development.md`](docs/development.md#8-troubleshooting).
 - [`docs/architecture.md`](docs/architecture.md): components, REST vs WS, data model, state machine, HITL sequence,
   security model
 - [`docs/api.md`](docs/api.md): endpoint reference with examples
-- [`docs/development.md`](docs/development.md): setup, LM Studio, tests, two-device demo
+- [`docs/development.md`](docs/development.md): setup, LLM, tests, two-device demo
 - [`docs/report/rapport.pdf`](docs/report/rapport.pdf): written report (French, LaTeX source in `docs/report/rapport.tex`)
 - [`contracts/CONTRACT.md`](contracts/CONTRACT.md): API contract (source of truth)
 
