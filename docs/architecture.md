@@ -5,7 +5,7 @@ Rust backend; clients never talk to each other. The backend owns all state in Po
 calls the LLM (any OpenAI-compatible API, or a deterministic mock).
 
 The API contract that both sides implement is [`contracts/CONTRACT.md`](../contracts/CONTRACT.md). This document explains
-how the pieces fit together and why. A standalone diagram is available as [`architecture.svg`](architecture.svg).
+how the pieces fit together and why. An overview diagram is available as [`architecture.svg`](architecture.svg).
 
 ## 1. Components
 

@@ -221,7 +221,7 @@ logged in as **alice**, phone logged in as **bob**.
 4. Optional: restart the backend during a pending approval. After restart the run is still AWAITING_APPROVAL and bob can
    still decide it.
 
-### 6.3 Screenshots and report
+### 6.3 Screenshots
 
 Automated captures (synthetic data) are regenerated with:
 
@@ -232,16 +232,15 @@ cd tests/e2e && pnpm exec playwright test --config screenshots.config.ts
 
 This writes `desktop-messaging.png`, `mobile-messaging.png`, `desktop-run-awaiting-approval.png`,
 `mobile-approval-inbox.png`, `mobile-approval-detail.png`, `desktop-dashboard.png`, `desktop-new-case.png`,
-`desktop-concept.png`, `desktop-architecture.png` and `swagger-ui.png` into
-`docs/screenshots/`.
+`desktop-concept.png`, `desktop-architecture.png` and `swagger-ui.png` into `docs/screenshots/`.
 
-The report figures `demo-two-devices.png` and `mockup-*.png` show the same screens inside laptop and phone frames
-(Apple Design Resources, not stored in the repository).
+`demo-two-devices.png` and `mockup-*.png` show the same screens inside laptop and phone frames (Apple Design
+Resources, not stored in the repository).
 
-The report itself is LaTeX, in `docs/report/`:
+The architecture figure `docs/architecture.svg` is drawn in TikZ (`docs/architecture-diagram.tex`):
 
 ```bash
-cd docs/report && pdflatex rapport.tex && pdflatex rapport.tex   # second run fills in the table of contents
+cd docs && pdflatex -output-directory /tmp architecture-diagram.tex && pdftocairo -svg /tmp/architecture-diagram.pdf architecture.svg
 ```
 
 ## 7. Docker full stack
