@@ -1,14 +1,12 @@
 # Design guidelines — AgentOps Control Center
 
-Distilled from Emil Kowalski's design-engineering skill (emilkowal.ski/skill) and Jakub Krehel's
-interface skills (jakub.kr/skills: better-ui, better-layout, better-typography, better-colors,
-better-accessibility, make-interfaces-feel-better). These rules are binding for `apps/web`.
+These rules are binding for `apps/web`.
 
 The product is a professional operations tool used many times a day. It should feel **quiet, dense,
 precise and fast** — closer to Linear / Vercel dashboard than to a landing page. Remove anything that
 exists only to look "designed".
 
-## 1. Remove the slop
+## 1. No decoration for its own sake
 
 - No decorative icon chips (colored square + icon) in card corners or headings. Icons only where they
   carry meaning or label an icon-only control.
@@ -25,7 +23,7 @@ exists only to look "designed".
 - Sentence case everywhere ("Run status changed", not "Llm Request" / title case).
 - Toasts must not overlap the header controls; bottom-right on desktop, top on mobile, max 3 visible.
 
-## 2. Color (family.co palette, better-colors method)
+## 2. Color (family.co palette)
 
 The palette follows family.co: warm paper neutrals, charcoal ink for text and primary actions, one
 blue for live and interactive state, and a small set of graphic hues for avatars and diagrams.
@@ -47,7 +45,7 @@ blue for live and interactive state, and a small set of graphic hues for avatars
 - Status is never carried by color alone (dot + word, icon + word on pipeline stages).
 - Dark mode is its own warm charcoal set under `.dark`; ink inverts to `#F3F1EC`.
 
-## 3. Typography (better-typography)
+## 3. Typography
 
 - One family (Inter / system) + one mono (for ids, amounts in tables optional). Load every weight used.
 - `antialiased` once on the root.
@@ -60,7 +58,7 @@ blue for live and interactive state, and a small set of graphic hues for avatars
 - Mobile inputs are 16px (no iOS zoom).
 - Real typography: `…`, `—`, curly quotes, non-breaking space before units where needed.
 
-## 4. Surfaces (better-ui)
+## 4. Surfaces
 
 - Concentric radius: outer radius = inner radius + padding. Set: 6 / 8 / 12 / 16 / 24 / 32px. Buttons are
   pills (`rounded-full`), cards 16–24px, large editorial blocks 32px.
@@ -74,7 +72,7 @@ blue for live and interactive state, and a small set of graphic hues for avatars
 - Build the missing primitive instead of falling back to the browser's: `Select` (Radix) replaces
   `<select>`, `DatePicker` (react-day-picker in a popover) replaces `<input type="date">`.
 
-## 4b. Layout (better-layout)
+## 4b. Layout
 
 - Group with space, not lines: gaps between groups are at least twice the gaps inside them. Section
   headings carry no rules; lists of cards use `space-y-*`, not `divide-y`.
@@ -98,7 +96,7 @@ blue for live and interactive state, and a small set of graphic hues for avatars
 - Scrollbars are hidden everywhere. Every scroll area still scrolls with wheel, touch and keyboard,
   and a sideways area says so on phones ("Swipe sideways to see the whole diagram.").
 
-## 5. Motion (Emil + better-ui)
+## 5. Motion
 
 - **Frequency decides.** High-frequency actions (typing, nav switches, row hover, tab switch, keyboard actions) → no animation or ≤150ms opacity/background only.
 - Easing tokens:
@@ -133,7 +131,7 @@ Animation inventory (each one passed the frequency / purpose / speed check):
 
 Left still on purpose: nav active state, row hover, tab switches and anything started from the keyboard.
 
-## 6. Accessibility (better-accessibility)
+## 6. Accessibility
 
 - Native elements: `<button>` for actions, `<a href>`/`<Link>` for navigation, never clickable `<div>`/`<tr>` without a real link inside.
 - `:focus-visible` ring, 2px, ≥ 3:1 contrast. Never remove outlines without replacement.
@@ -191,16 +189,16 @@ visuals read from it, so they cannot disagree.
 
 - Sidebar grouped as Work / Collaborate / Learn, active item a white pill. The connection status
   appears only when something is wrong; when connected it is a screen-reader-only label.
-- The sidebar can be hidden (button in its header, or `[`), with the slide described in Motion. When hidden, a floating vertical pill
-  keeps the show button, every nav item as an icon with a tooltip and badge dot, notifications and
+- The sidebar can be hidden (button in its header, or `[`), with the slide described in Motion. When
+  hidden, a floating vertical pill keeps the show button, every nav item as an icon with a tooltip and badge dot, notifications and
   the user menu. The choice is remembered per browser.
 
 ## 11. Learn pages
 
 `/learn/concept` presents AgentOps as a platform for supervising and validating AI agents (messaging
 is one part of it, used by the two people who decide), then the five ideas it puts to work (agentic AI,
-human in the loop, tool calling, observability, WebSocket), what is simulated, who is involved, the four case scenarios and the life of
-a case. `/learn/architecture` explains the system: the map of devices, proxy, server, database and
+human in the loop, tool calling, observability, WebSocket), what is simulated, who is involved, the four
+case scenarios and the life of a case. `/learn/architecture` explains the system: the map of devices, proxy, server, database and
 model; which channel (REST or WebSocket) carries what; sequence diagrams for a message, the approval
 loop and sign-in; and the run state machine. Diagrams are hand-placed SVG in `features/learn/diagrams/`
 using the same tokens, with one line style per channel (REST solid ink, WebSocket dashed blue, SQL
@@ -216,12 +214,12 @@ carry a surface-coloured halo so lifelines never cut through them.
   pin it. Your own REST calls and socket frames (recorded by `stores/traffic.ts` from `lib/api.ts` and
   the realtime provider) travel across the map as packets and fill a traffic log. "Replay a message"
   and "Replay an approval" animate the two main flows, and the map replays them in turn on its own
-(a pause button stops it). The people online are shown under the map.
+  (a pause button stops it). The people online are shown under the map.
 - **Sequences**: Play, pause, step with the arrow keys or click a step. The current arrow carries a
   travelling dot and the actors involved are outlined.
 - **Run state machine**: plays every path in turn (approved, rejected, no action, model fails); pick
-  one to loop it. Each
-  state shows how many runs are in it right now; operators can click a state to open those runs.
+  one to loop it. Each state shows how many runs are in it right now; operators can click a state to
+  open those runs.
 
 ## 12. App icon
 
@@ -229,7 +227,7 @@ A dark ink square (radius 9 of 32) with an open ring and a gold dot at its gap: 
 at the point where it can be stopped. `components/shared/logo.tsx` draws it with theme tokens; the
 favicon, `apple-touch-icon.png`, `icon-512.png` (maskable) and `manifest.webmanifest` use the same shape.
 
-## 13. Writing (better-writing)
+## 13. Writing
 
 - Errors say what failed and what to do next: "Unable to load this case. Check your connection, then
   try again." Never "Something went wrong", "Could not", "Please" or "successfully".

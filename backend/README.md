@@ -7,7 +7,7 @@ university instant-messaging API (REST + WebSocket) and the AI-agent human-in-th
 
 ```bash
 # from repo root: start PostgreSQL
-DOCKER_CONTEXT=desktop-linux docker compose up -d postgres
+docker compose up -d postgres
 
 cd backend
 cargo run                          # API on BIND_ADDR (default 0.0.0.0:8080); runs migrations + startup recovery
@@ -16,7 +16,7 @@ cargo run --bin export_openapi     # writes ../contracts/openapi/openapi.json (o
 cargo test                         # needs DATABASE_URL (read from ../.env); #[sqlx::test] creates throwaway DBs
 cargo fmt --all && cargo clippy --all-targets -- -D warnings
 
-# opt-in real LLM smoke test (LM Studio running with a chat model loaded)
+# opt-in real LLM smoke test (an OpenAI-compatible server with a chat model loaded)
 LLM_MODE=real cargo test --test llm_tests -- --ignored real_lmstudio_smoke
 ```
 
@@ -77,7 +77,7 @@ Deterministic: high + `flag_invoice_for_review` if amount > 3× `historicalAvera
 amount ≥ 5 000; else low + `no_action`. Test hooks in the invoice description: `[mock:invalid]` (invalid output),
 `[mock:timeout]`, `[mock:slow]` (2 s delay, to observe `RUNNING`).
 
-### Real LLM (LM Studio)
+### Real LLM (OpenAI-compatible)
 
 `POST {base}/chat/completions` with a strict system prompt and `response_format: json_schema (strict)`; if the
 server answers 400 to that, the adapter retries (and keeps going) without it. The JSON object is extracted from the
@@ -86,13 +86,11 @@ content (code fences / `<think>` / prose stripped), deserialised with `deny_unkn
 `InvalidOutput`, `Http`. The worker makes up to 2 attempts for `InvalidOutput`/`Timeout`; any final failure → run
 `FAILED` (never auto-approved).
 
-### Rig decision
+### Why a plain HTTP client
 
-Rig was evaluated (timeboxed). The current `rig-core` (0.46) declares `rust-version = 1.97.1`, which does not build
-on this project's pinned Rust 1.92 toolchain. Besides that, the adapter needs fine-grained control that is simpler
-with a ~150-line reqwest client: detecting a 400 on `response_format: json_schema` and retrying without it,
-classifying LM Studio errors (model not loaded vs. server down vs. timeout), and `/v1/models` discovery. The
-`LlmProvider` trait keeps the door open: a Rig-backed provider can be added later without touching the workflow.
+The adapter is a small reqwest client rather than an LLM framework: it needs to retry without `response_format` on a
+400, tell a missing model from a stopped server or a timeout, and list models. Another provider can be added behind
+the `LlmProvider` trait without touching the workflow.
 
 ## Security notes
 
