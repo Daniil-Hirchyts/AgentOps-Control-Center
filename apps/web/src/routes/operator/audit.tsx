@@ -3,6 +3,7 @@ import { Agent, Person } from '@/components/shared/actor'
 import { agentForEvent } from '@/features/agents/agents'
 import { PageContainer } from '@/components/layout/app-shell'
 import { PageHeader } from '@/components/shared/page-header'
+import { MobileList, MobileListItem } from '@/components/shared/mobile-list'
 import { EmptyState, ErrorState, RowsSkeleton } from '@/components/shared/states'
 import { Dot } from '@/components/shared/status'
 import { Select, SelectContent, SelectItem, SelectSeparator, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -59,7 +60,44 @@ export function AuditPage({
       ) : events.length === 0 ? (
         <EmptyState title="No events yet" description="Events are recorded as soon as a run starts." />
       ) : (
-        <Table data-testid="audit-table">
+        <>
+        <MobileList data-testid="audit-list">
+          {events.map((e) => {
+            const summary = auditSummary(e)
+            return (
+              <MobileListItem
+                key={e.id}
+                title={
+                  <span className="inline-flex items-center gap-2">
+                    <Dot tone={AUDIT_EVENT_TONE[e.eventType] ?? 'neutral'} className="size-1.5" />
+                    {auditEventLabel(e.eventType)}
+                  </span>
+                }
+                trailing={
+                  e.agentRunId ? (
+                    <Link
+                      to="/operator/runs/$runId"
+                      params={{ runId: String(e.agentRunId) }}
+                      className="font-mono text-13 text-accent-text tabular-nums"
+                    >
+                      #{e.agentRunId}
+                    </Link>
+                  ) : null
+                }
+                meta={
+                  <>
+                    <span className="tabular-nums">{formatDateTime(e.createdAt)}</span>
+                    <span className="ms-auto">
+                      {e.actorUsername ? <Person username={e.actorUsername} /> : <Agent agent={agentForEvent(e.eventType).id} />}
+                    </span>
+                    {summary && <span className="basis-full text-pretty text-text-tertiary">{summary}</span>}
+                  </>
+                }
+              />
+            )
+          })}
+        </MobileList>
+        <Table data-testid="audit-table" containerClassName="hidden sm:block">
           <TableHeader>
             <TableRow>
               <TableHead>Time</TableHead>
@@ -108,6 +146,7 @@ export function AuditPage({
             })}
           </TableBody>
         </Table>
+        </>
       )}
     </PageContainer>
   )

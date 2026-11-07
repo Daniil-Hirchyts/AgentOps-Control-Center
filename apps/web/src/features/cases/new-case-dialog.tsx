@@ -129,7 +129,7 @@ export function NewCaseDialog({
               <FormField id="case-vendor" label="Vendor" error={errors.vendor?.message}>
                 <Input placeholder="Northwind Consulting SARL" autoComplete="organization" {...field('vendor')} />
               </FormField>
-              <div className="grid grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] gap-3">
+              <div className="grid gap-4 sm:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] sm:gap-3">
                 <FormField id="case-amount" label="Amount" error={errors.amount?.message ?? errors.currency?.message}>
                   <div className="flex">
                     <Input inputMode="decimal" placeholder="48250.00" className="relative rounded-e-none tabular-nums focus-visible:z-10" {...field('amount')} />

@@ -2,6 +2,7 @@ import { PageContainer } from '@/components/layout/app-shell'
 import { PageHeader } from '@/components/shared/page-header'
 import { RowLink, rowLinkClass } from '@/components/shared/row-link'
 import { EmptyState, ErrorState, RowsSkeleton } from '@/components/shared/states'
+import { MobileList, MobileListItem } from '@/components/shared/mobile-list'
 import { DeviationMini } from '@/components/shared/invoice-visuals'
 import { CaseStatusBadge } from '@/components/shared/status'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -29,7 +30,29 @@ export function CasesPage() {
       ) : items.length === 0 ? (
         <EmptyState title="No cases yet" description="Create a case for an invoice you want the agent to assess." />
       ) : (
-        <Table data-testid="cases-table">
+        <>
+        <MobileList data-testid="cases-list">
+          {items.map((c) => (
+            <MobileListItem
+              key={c.id}
+              data-testid={`case-item-${c.id}`}
+              title={
+                <RowLink to="/operator/cases/$caseId" params={{ caseId: String(c.id) }}>
+                  {c.title}
+                </RowLink>
+              }
+              trailing={formatMoney(c.invoice.amount, c.invoice.currency)}
+              meta={
+                <>
+                  <CaseStatusBadge status={c.status} />
+                  <span className="truncate">{c.invoice.vendor}</span>
+                  <span className="ms-auto shrink-0 tabular-nums">{formatRelative(c.createdAt)}</span>
+                </>
+              }
+            />
+          ))}
+        </MobileList>
+        <Table data-testid="cases-table" containerClassName="hidden sm:block">
           <TableHeader>
             <TableRow>
               <TableHead>Title</TableHead>
@@ -70,6 +93,7 @@ export function CasesPage() {
             ))}
           </TableBody>
         </Table>
+        </>
       )}
     </PageContainer>
   )

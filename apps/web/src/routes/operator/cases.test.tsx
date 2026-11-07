@@ -1,4 +1,4 @@
-import { screen, waitFor } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 import type { CaseDto } from '@/lib/types'
@@ -48,10 +48,15 @@ describe('CasesPage list states', () => {
 
     fail = false
     await userEvent.click(screen.getByRole('button', { name: /try again/i }))
-    expect(await screen.findByText('Unusual consulting invoice')).toBeInTheDocument()
-    expect(screen.getByTestId('case-status')).toHaveTextContent('Flagged for review')
+    const table = within(await screen.findByTestId('cases-table'))
+    expect(table.getByText('Unusual consulting invoice')).toBeInTheDocument()
+    expect(table.getByTestId('case-status')).toHaveTextContent('Flagged for review')
     // rows navigate through a real link, not a clickable <tr>
-    expect(screen.getByRole('link', { name: 'Unusual consulting invoice' })).toHaveAttribute('href', '/operator/cases/3')
+    expect(table.getByRole('link', { name: 'Unusual consulting invoice' })).toHaveAttribute('href', '/operator/cases/3')
+    // phones get the same case as a stacked row with the same link
+    const list = within(screen.getByTestId('cases-list'))
+    expect(list.getByRole('link', { name: 'Unusual consulting invoice' })).toHaveAttribute('href', '/operator/cases/3')
+    expect(list.getByText('Northwind')).toBeInTheDocument()
     await waitFor(() => expect(screen.queryByTestId('error-state')).not.toBeInTheDocument())
   })
 

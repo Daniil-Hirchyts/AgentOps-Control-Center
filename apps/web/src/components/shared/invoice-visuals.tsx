@@ -185,9 +185,9 @@ export function InvoiceSheet({ invoice, className }: { invoice: InvoiceInput; cl
           </div>
           <dl className="grid grid-cols-[auto_auto] gap-x-3 gap-y-0.5 text-xs">
             <dt className="text-text-tertiary">Invoice</dt>
-            <dd className="text-end font-mono text-text">{invoice.invoiceNumber}</dd>
+            <dd className="font-mono text-text">{invoice.invoiceNumber}</dd>
             <dt className="text-text-tertiary">Issued</dt>
-            <dd className="text-end text-text tabular-nums">{formatDate(invoice.issueDate)}</dd>
+            <dd className="text-text tabular-nums">{formatDate(invoice.issueDate)}</dd>
           </dl>
         </header>
         <div>

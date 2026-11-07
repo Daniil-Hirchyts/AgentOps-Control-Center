@@ -61,8 +61,10 @@ export function RunDetailPage({ runId }: { runId: number }) {
             <Link to="/operator/cases/$caseId" params={{ caseId: String(r.caseId) }} className="text-text underline-offset-2 hover:underline">
               {r.caseTitle}
             </Link>
-            <MetaDot />
-            <span className="tabular-nums">Started {formatDateTime(r.createdAt)}</span>
+            <span className="max-sm:hidden">
+              <MetaDot />
+            </span>
+            <span className="tabular-nums max-sm:w-full">Started {formatDateTime(r.createdAt)}</span>
           </span>
         }
         actions={

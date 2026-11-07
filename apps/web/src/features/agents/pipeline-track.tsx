@@ -104,7 +104,7 @@ export function PipelineTrack({ run, compact = false, className }: { run: RunLik
               <div className="min-w-0">
                 <p
                   className={cn(
-                    'truncate text-xs font-medium @lg:text-13',
+                    'text-xs leading-tight font-medium break-words @md:truncate @lg:text-13',
                     s.state === 'upcoming' || s.state === 'skipped' ? 'text-text-tertiary' : 'text-text',
                   )}
                 >
