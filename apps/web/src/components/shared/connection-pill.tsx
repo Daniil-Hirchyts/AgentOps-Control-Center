@@ -23,13 +23,23 @@ const TONE: Record<keyof typeof LABEL, Tone> = {
 export function ConnectionStatus({
   className,
   compact = false,
+  quiet = false,
   testId = 'ws-status',
 }: {
   className?: string
   compact?: boolean
+  /** Say nothing visible while connected; only problems are worth the space. */
+  quiet?: boolean
   testId?: string
 }) {
   const status = useRealtimeStore((s) => s.wsStatus)
+  if (quiet && status === 'connected') {
+    return (
+      <span data-testid={testId} data-status={status} role="status" aria-live="polite" className="sr-only">
+        {LABEL[status]}
+      </span>
+    )
+  }
   return (
     <span
       data-testid={testId}

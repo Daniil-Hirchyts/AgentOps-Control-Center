@@ -17,9 +17,19 @@ export function applyTheme(theme: Theme) {
   document.documentElement.classList.toggle('dark', theme === 'dark')
 }
 
+function initialSidebar(): boolean {
+  try {
+    return window.localStorage.getItem('agentops-sidebar') === 'hidden'
+  } catch {
+    return false
+  }
+}
+
 interface UiState {
   theme: Theme
   toggleTheme: () => void
+  sidebarHidden: boolean
+  toggleSidebar: () => void
 }
 
 /** UI preferences only (theme is not sensitive, so it may live in localStorage). */
@@ -34,5 +44,15 @@ export const useUiStore = create<UiState>()((set, get) => ({
     }
     applyTheme(theme)
     set({ theme })
+  },
+  sidebarHidden: typeof window === 'undefined' ? false : initialSidebar(),
+  toggleSidebar: () => {
+    const sidebarHidden = !get().sidebarHidden
+    try {
+      window.localStorage.setItem('agentops-sidebar', sidebarHidden ? 'hidden' : 'shown')
+    } catch {
+      /* ignore */
+    }
+    set({ sidebarHidden })
   },
 }))

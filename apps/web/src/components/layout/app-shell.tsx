@@ -1,5 +1,7 @@
 import { Link, useRouterState } from '@tanstack/react-router'
-import type { ReactNode } from 'react'
+import { PanelLeftClose, PanelLeftOpen } from 'lucide-react'
+import { type ReactNode, useEffect } from 'react'
+import { Tooltip } from '@/components/ui/tooltip'
 import { ConnectionStatus } from '@/components/shared/connection-pill'
 import { useApprovals } from '@/features/approvals/hooks'
 import { useUsers } from '@/features/messaging/hooks'
@@ -7,7 +9,8 @@ import { DESKTOP_QUERY, useMediaQuery } from '@/lib/hooks'
 import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/stores/auth'
 import { selectTotalUnreadMessages, useRealtimeStore } from '@/stores/realtime'
-import { isActive, NAV, type NavItem } from './nav'
+import { useUiStore } from '@/stores/ui'
+import { isActive, NAV, NAV_GROUPS, type NavItem } from './nav'
 import { NotificationBell } from './notification-bell'
 import { UserMenu } from './user-menu'
 
@@ -39,11 +42,41 @@ export function Wordmark({ className }: { className?: string }) {
   return (
     <Link
       to="/"
-      className={cn('inline-flex h-8 items-center rounded-md text-[15px] font-semibold tracking-[-0.01em] text-text', className)}
+      className={cn('inline-flex h-8 items-center gap-2 rounded-md text-[15px] font-semibold tracking-[-0.02em] text-text', className)}
     >
+      <LogoMark />
       AgentOps
     </Link>
   )
+}
+
+/** Two people and one agent around a gate: a rounded square with an opening. */
+function LogoMark() {
+  return (
+    <svg viewBox="0 0 20 20" className="size-5" aria-hidden>
+      <rect x="1.5" y="1.5" width="17" height="17" rx="5" fill="none" stroke="currentColor" strokeWidth="2.2" />
+      <rect x="6.5" y="6.5" width="7" height="7" rx="2" className="fill-hue-blue" />
+    </svg>
+  )
+}
+
+/** Toggle with `[` like most desktop tools, unless the user is typing. */
+function useSidebarShortcut(toggle: () => void) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== '[' || e.metaKey || e.ctrlKey || e.altKey) return
+      const t = e.target as HTMLElement | null
+      if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return
+      e.preventDefault()
+      toggle()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [toggle])
+}
+
+function navTestId(item: NavItem) {
+  return `nav-${item.label.toLowerCase().replace(/\s+/g, '-')}`
 }
 
 export function AppShell({ children }: { children: ReactNode }) {
@@ -60,48 +93,9 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   if (isDesktop) {
     return (
-      <div className="flex h-dvh overflow-hidden">
-        <aside className="flex w-56 shrink-0 flex-col border-e bg-bg-subtle" aria-label="Main navigation">
-          <div className="flex h-14 items-center justify-between pe-2 ps-5">
-            <Wordmark />
-            <NotificationBell />
-          </div>
-          <nav className="flex-1 space-y-px px-2 py-2">
-            {items.map((item) => {
-              const active = isActive(pathname, item)
-              const Icon = item.icon
-              return (
-                <Link
-                  key={item.to}
-                  to={item.to}
-                  data-testid={`nav-${item.label.toLowerCase().replace(/\s+/g, '-')}`}
-                  aria-current={active ? 'page' : undefined}
-                  className={cn(
-                    'flex h-9 items-center gap-2.5 rounded-md px-3 text-sm transition-colors duration-100',
-                    active
-                      ? 'bg-bg-muted font-medium text-text'
-                      : 'text-text-secondary hover:bg-bg-muted/60 hover:text-text',
-                  )}
-                >
-                  <Icon
-                    className={cn('size-4', active ? 'text-accent-text' : 'text-text-tertiary')}
-                    strokeWidth={active ? 2 : 1.5}
-                  />
-                  <span className="flex-1">{item.label}</span>
-                  <Count n={badgeFor(item)} />
-                </Link>
-              )
-            })}
-          </nav>
-          <div className="space-y-1 border-t px-2 py-2">
-            <ConnectionStatus className="h-8 px-3 text-xs" />
-            <UserMenu />
-          </div>
-        </aside>
-        <main className="relative min-h-0 min-w-0 flex-1 overflow-y-auto" id="main">
-          {children}
-        </main>
-      </div>
+      <DesktopShell pathname={pathname} badgeFor={badgeFor}>
+        {children}
+      </DesktopShell>
     )
   }
 
@@ -111,7 +105,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <header className="flex h-12 shrink-0 items-center gap-1 border-b bg-bg pe-1.5 ps-4 pt-[env(safe-area-inset-top)]">
           <Wordmark />
           <div className="flex-1" />
-          <ConnectionStatus compact className="px-2" />
+          <ConnectionStatus quiet compact className="px-2" />
           <NotificationBell />
           <UserMenu compact />
         </header>
@@ -147,6 +141,136 @@ export function AppShell({ children }: { children: ReactNode }) {
           })}
         </nav>
       )}
+    </div>
+  )
+}
+
+function DesktopShell({
+  pathname,
+  badgeFor,
+  children,
+}: {
+  pathname: string
+  badgeFor: (i: NavItem) => number
+  children: ReactNode
+}) {
+  const role = useAuthStore((s) => s.user?.role) ?? 'OPERATOR'
+  const hidden = useUiStore((s) => s.sidebarHidden)
+  const toggle = useUiStore((s) => s.toggleSidebar)
+  useSidebarShortcut(toggle)
+  const groups = NAV_GROUPS[role]
+
+  return (
+    <div className="flex h-dvh overflow-hidden">
+      {!hidden && (
+        <aside className="flex w-60 shrink-0 flex-col bg-bg-subtle" aria-label="Main navigation" data-testid="sidebar">
+          <div className="flex h-16 items-center justify-between ps-5 pe-3">
+            <Wordmark />
+            <Tooltip label="Hide sidebar  [">
+              <button
+                type="button"
+                onClick={toggle}
+                aria-label="Hide sidebar"
+                data-testid="sidebar-hide"
+                className="pressable inline-flex size-8 items-center justify-center rounded-full text-text-tertiary hover:bg-bg-muted hover:text-text"
+              >
+                <PanelLeftClose className="size-4" strokeWidth={1.75} />
+              </button>
+            </Tooltip>
+          </div>
+          <nav className="flex-1 space-y-6 overflow-y-auto px-3 pt-2 pb-4">
+            {groups.map((g) => (
+              <div key={g.label}>
+                <p className="mb-1 px-3 text-xs font-medium text-text-tertiary">{g.label}</p>
+                <ul className="space-y-0.5">
+                  {g.items.map((item) => {
+                    const active = isActive(pathname, item)
+                    const Icon = item.icon
+                    return (
+                      <li key={item.to}>
+                        <Link
+                          to={item.to}
+                          data-testid={navTestId(item)}
+                          aria-current={active ? 'page' : undefined}
+                          className={cn(
+                            'flex h-9 items-center gap-2.5 rounded-full px-3 text-sm transition-colors duration-100',
+                            active ? 'bg-bg-surface font-medium text-text shadow-border' : 'text-text-secondary hover:bg-bg-muted hover:text-text',
+                          )}
+                        >
+                          <Icon className={cn('size-4', active ? 'text-text' : 'text-text-tertiary')} strokeWidth={active ? 2 : 1.75} />
+                          <span className="flex-1">{item.label}</span>
+                          <Count n={badgeFor(item)} />
+                        </Link>
+                      </li>
+                    )
+                  })}
+                </ul>
+              </div>
+            ))}
+          </nav>
+          <div className="space-y-1 p-3">
+            <ConnectionStatus quiet className="h-8 px-3 text-xs" />
+            <div className="flex items-center gap-1">
+              <div className="min-w-0 flex-1">
+                <UserMenu />
+              </div>
+              <NotificationBell />
+            </div>
+          </div>
+        </aside>
+      )}
+
+      {hidden && (
+        <div
+          className="fixed top-3 start-3 z-40 flex flex-col items-center gap-1 rounded-full bg-bg-surface/90 p-1 shadow-overlay backdrop-blur-md"
+          aria-label="Main navigation"
+          role="navigation"
+          data-testid="floating-controls"
+        >
+          <Tooltip label="Show sidebar  [">
+            <button
+              type="button"
+              onClick={toggle}
+              aria-label="Show sidebar"
+              data-testid="sidebar-show"
+              className="pressable inline-flex size-9 items-center justify-center rounded-full text-text-secondary hover:bg-bg-muted hover:text-text"
+            >
+              <PanelLeftOpen className="size-4" strokeWidth={1.75} />
+            </button>
+          </Tooltip>
+          <span className="my-0.5 h-px w-5 bg-separator" aria-hidden />
+          {groups.flatMap((g) => g.items).map((item) => {
+            const active = isActive(pathname, item)
+            const Icon = item.icon
+            const n = badgeFor(item)
+            return (
+              <Tooltip key={item.to} label={item.label}>
+                <Link
+                  to={item.to}
+                  aria-label={item.label}
+                  aria-current={active ? 'page' : undefined}
+                  data-testid={navTestId(item)}
+                  className={cn(
+                    'pressable relative inline-flex size-9 items-center justify-center rounded-full transition-colors duration-100',
+                    active ? 'bg-ink text-text-on-ink' : 'text-text-secondary hover:bg-bg-muted hover:text-text',
+                  )}
+                >
+                  <Icon className="size-4" strokeWidth={active ? 2 : 1.75} />
+                  {n > 0 && <span className="absolute top-1 end-1 size-2 rounded-full bg-accent-solid ring-2 ring-bg-surface" />}
+                </Link>
+              </Tooltip>
+            )
+          })}
+          <span className="my-0.5 h-px w-5 bg-separator" aria-hidden />
+          <NotificationBell />
+          <UserMenu compact />
+          <ConnectionStatus quiet compact className="px-2 py-1" />
+        </div>
+      )}
+
+      <main className={cn('relative min-h-0 min-w-0 flex-1 overflow-y-auto', hidden && 'ps-14')} id="main">
+        {children}
+      </main>
     </div>
   )
 }
