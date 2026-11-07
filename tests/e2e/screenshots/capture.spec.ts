@@ -35,6 +35,7 @@ test('capture report screenshots (alice desktop operator, bob mobile reviewer)',
   await desk.getByTestId('reviewer-option-bob').click();
   await desk.getByTestId('start-run-submit').click();
   await expect(desk.getByTestId('run-status').first()).toContainText(/awaiting approval/i);
+  await desk.waitForTimeout(1200); // let the pipeline nodes finish their transition
   await desk.screenshot({ path: `${OUT}/desktop-run-awaiting-approval.png` });
 
   // Conversation on both devices.
@@ -73,6 +74,12 @@ test('capture report screenshots (alice desktop operator, bob mobile reviewer)',
   await desk.waitForTimeout(300);
   await desk.screenshot({ path: `${OUT}/desktop-new-case.png` });
   await desk.keyboard.press('Escape');
+  await desk.goto('/learn/concept');
+  await desk.waitForTimeout(800);
+  await desk.screenshot({ path: `${OUT}/desktop-concept.png` });
+  await desk.goto('/learn/architecture');
+  await desk.waitForTimeout(800);
+  await desk.screenshot({ path: `${OUT}/desktop-architecture.png` });
   await desk.goto('/api/docs/');
   await desk.waitForTimeout(1500);
   await desk.screenshot({ path: `${OUT}/swagger-ui.png` });

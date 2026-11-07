@@ -8,9 +8,11 @@ Human-in-the-Loop approval platform for an AI agent running on a local LLM.
 - **AgentOps:** an operator submits an invoice; an agent (LM Studio or a deterministic mock) assesses the risk and
   proposes an action; a reviewer approves or rejects it in real time from another device; the approved action is
   executed exactly once and every step is audited.
+- **Learn pages in the app:** `/learn/concept` explains what is simulated and what each demo case is for;
+  `/learn/architecture` walks through the servers, REST vs WebSocket and the approval loop with diagrams.
 
 Stack: Rust (Axum, Tokio, SQLx, Utoipa, Argon2id, jsonwebtoken) · PostgreSQL 17 · React + Vite + TypeScript
-(TanStack Router/Query, Zustand, Tailwind, shadcn/ui, prompt-kit, motion-primitives, Anatomy isometric kit) · LM Studio · Docker Compose · Caddy · GitHub Actions.
+(TanStack Router/Query, Zustand, Tailwind, shadcn/ui, prompt-kit, motion-primitives) · LM Studio · Docker Compose · Caddy · GitHub Actions.
 
 ![Architecture](docs/architecture.svg)
 

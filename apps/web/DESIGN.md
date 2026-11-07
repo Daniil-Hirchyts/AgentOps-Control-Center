@@ -18,37 +18,34 @@ exists only to look "designed".
 - No charts that show mostly empty data. A chart must earn its place: every visual on a page answers
   a question the user has there (where is this run? how far off is this amount? what waits on me?).
 - Cards: not every section needs a card. Group with space first; cards only for grouped, elevated
-  content (the pipeline figure, the proposal, an invoice sheet, inbox items).
+  content (the pipeline card, the proposal, an invoice sheet, inbox items).
 - Never show raw identifiers as UI copy (`flag_invoice_for_review`, `llm_response_valid`). Map to
   human labels ("Flag invoice for review", "Model response validated"). Raw ids may appear in a
   secondary monospace detail.
 - Sentence case everywhere ("Run status changed", not "Llm Request" / title case).
 - Toasts must not overlap the header controls; bottom-right on desktop, top on mobile, max 3 visible.
 
-## 2. Color (better-colors)
+## 2. Color (family.co palette, better-colors method)
 
-Generated in OKLCH (culori) as Radix-style 12-step ramps where each step has a job: 1–2 backgrounds,
-3–5 interactive fills, 6–8 borders, 9–10 solid fills, 11–12 text. Constant hue per ramp, chroma
-peaking mid-ramp and easing off at both ends so the light steps don't go chalky and the dark ones
-don't go muddy.
+The palette follows family.co: warm paper neutrals, charcoal ink for text and primary actions, one
+blue for live and interactive state, and a small set of graphic hues for avatars and diagrams.
 
-| Ramp | Hue | Notes |
+| Role | Light | Notes |
 | --- | --- | --- |
-| neutral | 80 (warm stone) | chroma ≤ 0.008, reads as paper rather than blue-grey |
-| accent | 218 (petrol) | one accent; ≥ 40° from every status hue |
-| success / warning / danger | 152 / 72 / 25 | only the steps that are rendered |
+| page / subtle / muted | `#FBFAF9` / `#F6F4EF` / `#F2F0ED` | warm stone, never blue-grey; surfaces are white |
+| ink | `#343433` | body text and the primary pill button (`bg-ink text-text-on-ink`) |
+| accent | `#2F6FE4` (text `#2563D4`) | live pipeline stage, links, focus ring, own message bubbles |
+| success / warning / danger | `#44C67F` / `#FFBE4C` / `#D63A31` | text steps `#1F7F49` / `#93620F` / `#C8322B` |
+| graphic hues | blue, green, purple, orange, gold, pink + `-pale` | agent avatars, diagram fills, initials |
 
-- Two tiers: primitives (`--neutral-1…12`, `--accent-*`, `--green-*`, `--amber-*`, `--red-*`) and
-  **semantic tokens** that components use exclusively: `--color-bg`, `-bg-subtle`, `-bg-muted`,
-  `-bg-surface`, `-text`, `-text-secondary`, `-text-tertiary`, `-border`, `-border-control`,
-  `-accent-solid`, `-accent-text`, `-success-*`, `-warning-*`, `-danger-*`. Tailwind's default palette
-  is reset, so a stray `bg-blue-500` doesn't compile.
-- Measured contrast (light / dark): text 16.6 / 16.9, secondary 7.1 / 9.0, tertiary 4.6 / 5.3,
-  text on accent 5.8 / 5.7, control borders 3.4 / 3.0.
-- Accent is used sparingly: one filled primary action per view, focus rings, active nav, the live
-  stage of a pipeline, own message bubbles. Everything else neutral.
+- Two tiers: primitives (`--neutral-*`, `--ink`, `--accent-*`, `--green-*`, `--amber-*`, `--red-*`,
+  `--hue-*`) and **semantic tokens** that components use exclusively (`--color-bg`, `-bg-subtle`,
+  `-text`, `-text-secondary`, `-border`, `-ink`, `-text-on-ink`, `-accent-solid`, `-success-*`, …,
+  `--color-hue-*`). Tailwind's default palette is reset, so a stray `bg-blue-500` doesn't compile.
+- Measured contrast (light): text 12.0, secondary 7.1, tertiary 4.6, white on ink 12.5, white on blue 4.65.
+- Primary actions are ink, not blue. Blue is kept for what is live or interactive, so it still means something.
 - Status is never carried by color alone (dot + word, icon + word on pipeline stages).
-- Dark mode is its own set of values under `.dark`, not an inversion; accent text moves to step 11.
+- Dark mode is its own warm charcoal set under `.dark`; ink inverts to `#F3F1EC`.
 
 ## 3. Typography (better-typography)
 
@@ -65,9 +62,11 @@ don't go muddy.
 
 ## 4. Surfaces (better-ui)
 
-- Concentric radius: outer radius = inner radius + padding. Small set: 6px (controls), 8–12px (cards), 9999 (pills/avatars).
-- Elevated surfaces use a shadow ring (`--shadow-border`, `.surface`) over a transparent 1px border (kept for
-  forced-colors mode). Hover deepens the ring (`--shadow-border-hover`) instead of changing the fill.
+- Concentric radius: outer radius = inner radius + padding. Set: 6 / 8 / 12 / 16 / 24 / 32px. Buttons are
+  pills (`rounded-full`), cards 16–24px, large editorial blocks 32px.
+- Elevated surfaces use a flat 1px shadow ring (`0 0 0 1px #ece9e4`, `.surface`) over a transparent 1px
+  border (kept for forced-colors mode). No soft drop shadows. Hover deepens the ring instead of changing the fill.
+- Buttons: primary = ink pill, secondary = light stone pill, ghost for toolbars.
   Tables, dividers and inputs keep real borders.
 - Avatars/images: `outline: 1px solid oklch(0 0 0 / .1); outline-offset: -1px` (dark: white/10).
 - Icons: lucide only, `currentColor`, stroke 1.5 next to 400-weight text, 2 next to 600. 16px in UI, 14px in dense rows.
@@ -139,11 +138,8 @@ The agent's work is shown as one pipeline everywhere: intake → analyze → **h
 → execute → recorded. `features/agents/pipeline.ts` derives every stage's state from the run DTO; all
 visuals read from it, so they cannot disagree.
 
-- **Agent line** (`pipeline-machine.tsx`): an isometric bench drawn with the Anatomy kit
-  (wheresryan22/anatomy, MIT, vendored in `components/iso`). The invoice sheet rides a carriage under
-  the model gantry, waits at a boom gate with a key switch, is stamped by the press once approved, or
-  drops into the reject bin. One lit accent; everything else in three neutral tones; painter's order
-  back to front. Holds still under `prefers-reduced-motion`.
+- **Pipeline card** (`pipeline-card.tsx`): one line saying where the run is and why, above the track.
+  Used on the run page and the reviewer's approval page.
 - **Track** (`pipeline-track.tsx`): the same five stages as icon + word, connector flowing into the live
   stage; `compact` renders five segments for tables, cards and lists.
 - **Board** (`pipeline-board.tsx`): the overview places every run in its stage lane, with runs that
@@ -152,3 +148,30 @@ visuals read from it, so they cannot disagree.
   table-sized `DeviationMini`, and an invoice sheet. The new-case dialog previews the likely verdict
   from the same thresholds as the mock agent.
 
+## 9. People and agents
+
+- **People** get round portraits (`public/avatars/<username>.webp`, generated for the four demo users in
+  a flat, warm style that matches the palette). Anyone else gets initials on a pale hue picked from a
+  hash of the username. A presence dot sits on the avatar; the user's own avatar has no test id.
+- **Agents** get rounded-square pattern avatars (`components/shared/agent-avatar.tsx`), one hue and one
+  pattern each, so a square always means software and a circle always means a person. The names are
+  defined once in `features/agents/agents.ts`: Invoice Risk Analyst, Run Orchestrator, Approval
+  Gatekeeper, Case Action Executor, Realtime Relay. Audit entries and agent calls show the agent's
+  name instead of "System".
+
+## 10. Shell
+
+- Sidebar grouped as Work / Collaborate / Learn, active item a white pill. The connection status
+  appears only when something is wrong; when connected it is a screen-reader-only label.
+- The sidebar can be hidden (button in its header, or `[`). When hidden, a floating vertical pill
+  keeps the show button, every nav item as an icon with a tooltip and badge dot, notifications and
+  the user menu. The choice is remembered per browser.
+
+## 11. Learn pages
+
+`/learn/concept` explains what is simulated, who is involved, the four case scenarios and the life of
+a case. `/learn/architecture` explains the system: the map of devices, proxy, server, database and
+model; which channel (REST or WebSocket) carries what; sequence diagrams for a message, the approval
+loop and sign-in; and the run state machine. Diagrams are hand-placed SVG in `features/learn/diagrams.tsx`
+using the same tokens, with one line style per channel (REST solid ink, WebSocket dashed blue, SQL
+green, model dotted purple). They scroll sideways inside their frame on a phone.
