@@ -188,6 +188,18 @@ export const conversationRoute = createRoute({
   },
 })
 
+const learnRoute = createRoute({ getParentRoute: () => appRoute, path: 'learn', component: Outlet })
+const conceptRoute = createRoute({
+  getParentRoute: () => learnRoute,
+  path: 'concept',
+  component: lazyRouteComponent(() => import('@/routes/learn/concept'), 'ConceptPage'),
+})
+const architectureRoute = createRoute({
+  getParentRoute: () => learnRoute,
+  path: 'architecture',
+  component: lazyRouteComponent(() => import('@/routes/learn/architecture'), 'ArchitecturePage'),
+})
+
 export const routeTree = rootRoute.addChildren([
   loginRoute,
   registerRoute,
@@ -196,6 +208,7 @@ export const routeTree = rootRoute.addChildren([
     operatorRoute.addChildren([operatorIndexRoute, casesRoute, caseDetailRoute, runsRoute, runDetailRoute, auditRoute]),
     reviewerRoute.addChildren([reviewerIndexRoute, approvalDetailRoute]),
     messagesRoute.addChildren([messagesIndexRoute, conversationRoute]),
+    learnRoute.addChildren([conceptRoute, architectureRoute]),
   ]),
 ])
 
