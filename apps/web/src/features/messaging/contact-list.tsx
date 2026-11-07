@@ -9,6 +9,9 @@ import type { Id } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import { useRealtimeStore } from '@/stores/realtime'
 import { useContacts } from './hooks'
+import { readSeenOnline } from './seen'
+
+const OFFLINE_CAP = 5
 
 export function ContactList({ selectedUserId }: { selectedUserId?: Id }) {
   const { contacts, isPending, isError, error, refetch } = useContacts()
@@ -16,23 +19,67 @@ export function ContactList({ selectedUserId }: { selectedUserId?: Id }) {
   const typing = useRealtimeStore((s) => s.typing)
   const unread = useRealtimeStore((s) => s.unreadMessages)
 
-  const visible = contacts.filter((c) => c.username.toLowerCase().includes(filter.trim().toLowerCase()))
+  const [showAll, setShowAll] = useState(false)
+
+  const query = filter.trim().toLowerCase()
+  const visible = contacts.filter((c) => c.username.toLowerCase().includes(query))
+  const online = visible.filter((c) => c.online)
+  // Offline people: unread or open conversation first, then anyone seen online this session, then A to Z.
+  const seen = readSeenOnline()
+  const rank = (c: (typeof contacts)[number]) => ((unread[c.id] ?? 0) > 0 || c.id === selectedUserId ? 2 : seen.has(c.id) ? 1 : 0)
+  const offline = visible.filter((c) => !c.online).sort((a, b) => rank(b) - rank(a) || a.username.localeCompare(b.username))
+  const capped = query || showAll ? offline : offline.slice(0, OFFLINE_CAP)
+  const hiddenCount = offline.length - capped.length
   const onlineCount = contacts.filter((c) => c.online).length
+
+  const row = (c: (typeof contacts)[number]) => {
+    const active = c.id === selectedUserId
+    const count = unread[c.id] ?? 0
+    return (
+      <li key={c.id}>
+        <Link
+          to="/messages/$userId"
+          params={{ userId: String(c.id) }}
+          data-testid={`contact-${c.username}`}
+          aria-current={active ? 'page' : undefined}
+          className={cn(
+            'flex h-14 items-center gap-3 rounded-lg px-2 transition-colors duration-150',
+            active ? 'bg-bg-muted' : 'hover:bg-bg-muted/60',
+          )}
+        >
+          <UserAvatar username={c.username} online={c.online} size="lg" />
+          <span className="min-w-0 flex-1 leading-tight">
+            <span className="flex items-baseline gap-2">
+              <span className={cn('truncate text-sm', count > 0 || active ? 'font-medium' : '')}>{c.username}</span>
+              <span className="text-xs text-text-tertiary">{ROLE_LABEL[c.role]}</span>
+            </span>
+            <span className="mt-0.5 block truncate text-13 text-text-secondary">
+              {typing[c.id] ? 'Typing…' : c.online ? 'Online' : 'Offline'}
+            </span>
+          </span>
+          {count > 0 && (
+            <span
+              data-testid={`unread-${c.username}`}
+              aria-label={`${count} unread`}
+              className="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-accent-solid px-1 text-[11px] font-medium text-text-on-accent tabular-nums"
+            >
+              {count > 99 ? '99+' : count}
+            </span>
+          )}
+        </Link>
+      </li>
+    )
+  }
 
   return (
     <div className="flex h-full min-h-0 flex-col">
       <div className="space-y-3 px-4 pt-4 pb-3">
         <div className="flex items-baseline justify-between">
           <h1 className="text-base font-semibold md:text-sm">Messages</h1>
-          {!isPending && !isError && (
-            <span className="text-xs text-text-tertiary tabular-nums">{onlineCount} online</span>
-          )}
+          {!isPending && !isError && <span className="text-xs text-text-tertiary tabular-nums">{onlineCount} online</span>}
         </div>
         <div className="relative">
-          <Search
-            strokeWidth={1.5}
-            className="pointer-events-none absolute top-1/2 start-2.5 size-4 -translate-y-1/2 text-text-tertiary"
-          />
+          <Search strokeWidth={1.5} className="pointer-events-none absolute top-1/2 start-2.5 size-4 -translate-y-1/2 text-text-tertiary" />
           <Input
             type="search"
             value={filter}
@@ -55,48 +102,33 @@ export function ContactList({ selectedUserId }: { selectedUserId?: Id }) {
             description={filter ? undefined : 'People appear here once they create an account.'}
           />
         ) : (
-          <ul className="space-y-px">
-            {visible.map((c) => {
-              const active = c.id === selectedUserId
-              const count = unread[c.id] ?? 0
-              return (
-                <li key={c.id}>
-                  <Link
-                    to="/messages/$userId"
-                    params={{ userId: String(c.id) }}
-                    data-testid={`contact-${c.username}`}
-                    aria-current={active ? 'page' : undefined}
-                    className={cn(
-                      'flex h-14 items-center gap-3 rounded-md px-2 transition-colors duration-100',
-                      active ? 'bg-bg-muted' : 'hover:bg-bg-muted/60',
-                    )}
+          <div className="space-y-4">
+            {online.length > 0 && (
+              <section aria-labelledby="contacts-online">
+                <h2 id="contacts-online" className="px-2 pb-1 text-xs font-medium text-text-tertiary">
+                  Online · {online.length}
+                </h2>
+                <ul className="space-y-px">{online.map(row)}</ul>
+              </section>
+            )}
+            {offline.length > 0 && (
+              <section aria-labelledby="contacts-offline">
+                <h2 id="contacts-offline" className="px-2 pb-1 text-xs font-medium text-text-tertiary">
+                  Offline · {offline.length}
+                </h2>
+                <ul className="space-y-px">{capped.map(row)}</ul>
+                {(hiddenCount > 0 || (showAll && !query && offline.length > OFFLINE_CAP)) && (
+                  <button
+                    type="button"
+                    onClick={() => setShowAll((v) => !v)}
+                    className="pressable mt-1 h-9 w-full rounded-lg px-2 text-start text-13 font-medium text-text-secondary transition-colors duration-150 hover:bg-bg-muted/60 hover:text-text"
                   >
-                    <UserAvatar username={c.username} online={c.online} size="lg" />
-                    <span className="min-w-0 flex-1 leading-tight">
-                      <span className="flex items-baseline gap-2">
-                        <span className={cn('truncate text-sm', count > 0 || active ? 'font-medium' : '')}>
-                          {c.username}
-                        </span>
-                        <span className="text-xs text-text-tertiary">{ROLE_LABEL[c.role]}</span>
-                      </span>
-                      <span className="mt-0.5 block truncate text-13 text-text-secondary">
-                        {typing[c.id] ? 'Typing…' : c.online ? 'Online' : 'Offline'}
-                      </span>
-                    </span>
-                    {count > 0 && (
-                      <span
-                        data-testid={`unread-${c.username}`}
-                        aria-label={`${count} unread`}
-                        className="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-accent-solid px-1 text-[11px] font-medium text-text-on-accent tabular-nums"
-                      >
-                        {count > 99 ? '99+' : count}
-                      </span>
-                    )}
-                  </Link>
-                </li>
-              )
-            })}
-          </ul>
+                    {showAll ? 'Show fewer' : `Show ${hiddenCount} more`}
+                  </button>
+                )}
+              </section>
+            )}
+          </div>
         )}
       </div>
     </div>

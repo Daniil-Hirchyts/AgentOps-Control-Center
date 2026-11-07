@@ -7,13 +7,22 @@ import type { Id, MessageDto, UserDto } from '@/lib/types'
 import { localIsoNoZone, uuid } from '@/lib/utils'
 import { useAuthStore } from '@/stores/auth'
 import { appendOptimistic, removeByClientId, updateByClientId } from './cache'
+import { rememberOnline } from './seen'
 import type { ChatMessage } from './types'
 
 export const SEND_ACK_TIMEOUT_MS = 10_000
 const TYPING_IDLE_MS = 3_000
 
 export function useUsers() {
-  return useQuery({ queryKey: qk.users, queryFn: api.users, staleTime: 30_000 })
+  return useQuery({
+    queryKey: qk.users,
+    queryFn: async () => {
+      const users = await api.users()
+      rememberOnline(users.filter((u) => u.online).map((u) => u.id))
+      return users
+    },
+    staleTime: 30_000,
+  })
 }
 
 export function useContacts() {
