@@ -14,6 +14,8 @@ pub struct LlmConfig {
     pub base_url: String,
     pub model: Option<String>,
     pub api_key: Option<String>,
+    /// Sent as `reasoning_effort` when set (e.g. `none` to stop a reasoning model from thinking).
+    pub reasoning_effort: Option<String>,
     pub timeout: Duration,
     pub mode: LlmMode,
 }
@@ -89,6 +91,7 @@ impl Config {
                     .to_string(),
                 model: var("LLM_MODEL"),
                 api_key: var("LLM_API_KEY"),
+                reasoning_effort: var("LLM_REASONING_EFFORT"),
                 timeout: Duration::from_secs(parse_num("LLM_TIMEOUT_SECONDS", 120u64)?),
                 mode,
             },
@@ -128,6 +131,7 @@ impl Config {
                 base_url: "http://127.0.0.1:9/v1".into(),
                 model: None,
                 api_key: None,
+                reasoning_effort: None,
                 timeout: Duration::from_secs(5),
                 mode: LlmMode::Mock,
             },

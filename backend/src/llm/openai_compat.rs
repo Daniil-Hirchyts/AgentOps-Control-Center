@@ -145,6 +145,9 @@ impl OpenAiCompatProvider {
                 {"role": "user", "content": user},
             ],
         });
+        if let Some(effort) = &self.cfg.reasoning_effort {
+            body["reasoning_effort"] = json!(effort);
+        }
         if with_schema {
             body["response_format"] = json!({
                 "type": "json_schema",

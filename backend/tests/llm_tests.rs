@@ -74,9 +74,44 @@ fn cfg(base_url: String) -> LlmConfig {
         base_url,
         model: None,
         api_key: None,
+        reasoning_effort: None,
         timeout: Duration::from_secs(5),
         mode: LlmMode::Real,
     }
+}
+
+#[tokio::test]
+async fn reasoning_effort_is_sent_only_when_configured() {
+    let seen: Arc<std::sync::Mutex<Vec<Value>>> = Arc::default();
+    let app = Router::new()
+        .route("/v1/models", get(|| async { Json(json!({"data": [{"id": "stub-model"}]})) }))
+        .route(
+            "/v1/chat/completions",
+            post(|State(seen): State<Arc<std::sync::Mutex<Vec<Value>>>>, Json(body): Json<Value>| async move {
+                seen.lock().unwrap().push(body.get("reasoning_effort").cloned().unwrap_or(Value::Null));
+                Json(json!({"choices": [{"message": {"role": "assistant", "content":
+                    "{\"risk_level\":\"low\",\"reasoning_summary\":\"ok\",\"recommended_action\":\"no_action\",\"requires_approval\":false}"}}]}))
+            }),
+        )
+        .with_state(seen.clone());
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let base = format!("http://{}/v1", listener.local_addr().unwrap());
+    tokio::spawn(async move { axum::serve(listener, app).await.unwrap() });
+
+    OpenAiCompatProvider::new(cfg(base.clone()))
+        .unwrap()
+        .analyze(&invoice())
+        .await
+        .unwrap();
+    let mut with_effort = cfg(base);
+    with_effort.reasoning_effort = Some("none".into());
+    OpenAiCompatProvider::new(with_effort)
+        .unwrap()
+        .analyze(&invoice())
+        .await
+        .unwrap();
+
+    assert_eq!(*seen.lock().unwrap(), vec![Value::Null, json!("none")]);
 }
 
 #[tokio::test]
