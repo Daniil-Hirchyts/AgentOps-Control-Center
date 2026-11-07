@@ -8,3 +8,6 @@ playwright-report/
 test-results/
 coverage/
 .vite/
+
+# French report, kept out of the repository
+docs/report/
