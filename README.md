@@ -7,12 +7,12 @@
 A human-in-the-loop control plane for agentic AI: the LLM agent recommends, a person approves from any device,
 and the action runs exactly once, with every step audited.
 
-[What it shows](#what-this-project-shows) · [Workflow](#the-workflow) · [Engineering decisions](#engineering-decisions) · [Architecture](#architecture) · [Run it](#run-it)
+[Demo video](docs/demo/agentops-demo.mp4) · [What it shows](#what-this-project-shows) · [Workflow](#the-workflow) · [Engineering decisions](#engineering-decisions) · [Architecture](#architecture) · [Run it](#run-it)
 
-<img src="docs/screenshots/mockup-run-awaiting-approval.png" alt="An agent run on the desktop: the pipeline stopped at human review, the risk analysis of a 48,750 EUR invoice, the agent calls and the audit activity" width="960"/>
+<a href="docs/demo/agentops-demo.mp4"><img src="docs/demo/agentops-demo.gif" alt="Demo: the operator files an invoice on the laptop, the agent analyses it with a real model, the reviewer is notified on the phone, they discuss it and the reviewer approves, while a live diagram shows the REST, WebSocket, SQL and model traffic" width="960"/></a>
 
-<sub>An agent run stopped at the approval gate: the analysis, the proposed action, the agent calls and the live audit
-trail.</sub>
+<sub>28 seconds of the demo at 4× speed: a real model (Qwen 3.5 9B on LM Studio), two devices and the live
+backend traffic underneath. <a href="docs/demo/agentops-demo.mp4"><b>Watch the full 4-minute demo</b></a>.</sub>
 
 </div>
 
@@ -51,6 +51,11 @@ deployment needs.
   tickets, Origin checks, rate limits, OpenAPI 3.1, Docker Compose, CI, and tests at every level.
 
 ## The workflow
+
+<img src="docs/screenshots/mockup-run-awaiting-approval.png" alt="An agent run on the desktop: the pipeline stopped at human review, the risk analysis of a 48,750 EUR invoice, the agent calls and the audit activity" width="100%"/>
+
+<sub>An agent run stopped at the approval gate: the analysis, the proposed action, the agent calls and the live audit
+trail.</sub>
 
 <table>
 <tr>
