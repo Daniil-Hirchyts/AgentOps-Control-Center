@@ -4,8 +4,8 @@
 
 # AgentOps Control Center
 
-Human-in-the-loop control for AI agents: the model recommends, a person approves from any device, and the
-action runs exactly once, with every step audited.
+A human-in-the-loop control plane for agentic AI: the LLM agent recommends, a person approves from any device,
+and the action runs exactly once, with every step audited.
 
 [What it shows](#what-this-project-shows) · [Workflow](#the-workflow) · [Engineering decisions](#engineering-decisions) · [Architecture](#architecture) · [Run it](#run-it)
 
@@ -18,30 +18,35 @@ trail.</sub>
 
 ## Overview
 
-Companies want agents that act, not just answer, but an action with consequences (blocking a payment, changing a
-record) cannot be left to a model on its own. AgentOps is a full-stack system built around that problem: an LLM agent
-analyses a business case and proposes an action, the backend enforces policy, a human reviewer decides in real time,
-and only then does the action run.
+Companies want agentic AI that acts, not just answers, but an action with consequences (blocking a payment, changing
+a record) cannot be left to a model on its own. AgentOps is an end-to-end, full-stack system built around that problem:
+an LLM agent analyses a business case and proposes a tool call, guardrails and policy run in the backend, a human
+reviewer decides in real time, and only then does the action run. It is the kind of agentic workflow automation that
+gets deployed inside a customer's existing process, with governance and observability built in.
 
 The use case is accounts-payable fraud review. An operator submits an invoice; the agent compares it with the vendor's
 history, assesses the risk and recommends flagging it; a reviewer gets the request on their phone, discusses it with
-the operator in the built-in chat, and approves or rejects. The data is synthetic; the patterns are the ones an
-enterprise deployment needs.
+the operator in the built-in chat, and approves or rejects. The data is synthetic; the patterns (approval gates,
+idempotent actions, audit trail, model-agnostic integration) are the ones an enterprise deployment needs.
+
+**Keywords:** agentic AI · AI agents · LLM orchestration · tool calling · structured outputs · guardrails ·
+human-in-the-loop (HITL) · AI governance · observability · audit trail · enterprise workflow automation ·
+OpenAI-compatible APIs · real-time systems · full-stack · Rust · TypeScript · React · PostgreSQL · Docker
 
 ## What this project shows
 
-- **LLM integration that survives a real model.** A provider-agnostic layer over any OpenAI-compatible API (local or
+- **Production LLM integration.** A model-agnostic, provider-agnostic layer over any OpenAI-compatible API (local or
   hosted), strict JSON-schema output with a fallback for servers that reject it, typed validation, bounded retries and
   timeouts. A deterministic mock makes the whole system testable without a GPU or an API key.
-- **Guardrails outside the model.** The model only recommends. Actions come from a fixed allowlist implemented in
+- **Guardrails outside the model.** The model only recommends, through a tool-calling pattern with structured outputs. Actions come from a fixed allowlist implemented in
   Rust, the backend (not the model) decides what needs approval, and every failure path ends in `FAILED`, never in an
   executed action.
 - **Human in the loop as a first-class state.** An eight-state run lifecycle with an explicit approval gate,
   race-safe transitions, and live notifications to the assigned reviewer on any device.
 - **Safe side effects.** An approved action runs exactly once, even after a double click, a retry or a server
   restart, enforced by the database. Interrupted runs are recovered at startup.
-- **Auditability.** Every run, model request and response, decision and action is recorded with its actor and shown
-  as a timeline.
+- **Observability and AI governance.** Every run, model request and response, decision and action is recorded with
+  its actor and shown as an audit timeline; logs never contain secrets or tickets.
 - **Real-time product, not a demo script.** WebSocket presence, messaging with offline delivery, live status on
   desktop and mobile, and a responsive React interface designed for daily use.
 - **Production hygiene.** Argon2id, short-lived JWTs, HttpOnly refresh cookie with rotation, single-use WebSocket
