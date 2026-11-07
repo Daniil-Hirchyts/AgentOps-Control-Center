@@ -4,67 +4,102 @@
 
 # AgentOps Control Center
 
-A console for supervising AI agents: the agent proposes, a person approves from any device, and the action runs
-exactly once.
+Human-in-the-loop control for AI agents: the model recommends, a person approves from any device, and the
+action runs exactly once, with every step audited.
 
-[Features](#features) · [How it works](#how-it-works) · [Run it](#run-it) · [Architecture](docs/architecture.md) · [API](docs/api.md)
+[What it shows](#what-this-project-shows) · [Workflow](#the-workflow) · [Engineering decisions](#engineering-decisions) · [Architecture](#architecture) · [Run it](#run-it)
 
-<img src="docs/screenshots/demo-two-devices.png" alt="The same conversation open on a laptop as Alice and on a phone as Bob" width="960"/>
+<img src="docs/screenshots/mockup-run-awaiting-approval.png" alt="An agent run on the desktop: the pipeline stopped at human review, the risk analysis of a 48,750 EUR invoice, the agent calls and the audit activity" width="960"/>
 
-<sub>Alice, the operator, and Bob, the reviewer, discuss a flagged invoice from a laptop and a phone (synthetic data).</sub>
+<sub>An agent run stopped at the approval gate: the analysis, the proposed action, the agent calls and the live audit
+trail.</sub>
 
 </div>
 
-## About
+## Overview
 
-AI agents are useful until they want to do something that matters. AgentOps puts a person between the
-recommendation and the action. An operator hands the agent a case, the agent analyses it and proposes an action
-through a tool call, and a reviewer approves or rejects it in real time, from a laptop or a phone. The two can talk the
-decision over in the built-in chat. Nothing runs without that approval, and every step is recorded.
+Companies want agents that act, not just answer, but an action with consequences (blocking a payment, changing a
+record) cannot be left to a model on its own. AgentOps is a full-stack system built around that problem: an LLM agent
+analyses a business case and proposes an action, the backend enforces policy, a human reviewer decides in real time,
+and only then does the action run.
 
-The demo case is invoice fraud: an invoice far above the vendor's usual amount, with a change of bank details, gets
-flagged for review.
+The use case is accounts-payable fraud review. An operator submits an invoice; the agent compares it with the vendor's
+history, assesses the risk and recommends flagging it; a reviewer gets the request on their phone, discusses it with
+the operator in the built-in chat, and approves or rejects. The data is synthetic; the patterns are the ones an
+enterprise deployment needs.
 
-## Features
+## What this project shows
 
-- **Human approval for agent actions.** The model only recommends; actions come from a fixed allowlist, the backend
-  decides what needs approval, and an approved action is executed exactly once, even after a retry or a restart.
-- **Real-time messaging.** Accounts, live presence, typing indicator, and messages that reach offline users when they
-  come back.
-- **Any device.** The same app on desktop and mobile; status changes and approval requests appear live on both.
-- **Bring your own model.** Any OpenAI-compatible API, local or hosted, or a deterministic mock that needs nothing.
-- **Audit trail.** Every run, model response, decision and action is logged with its author.
-- **Security by default.** Argon2id passwords, short-lived tokens kept in memory, an HttpOnly refresh cookie,
-  single-use WebSocket tickets, Origin checks and rate limits.
-- **Documented API.** OpenAPI 3.1 with Swagger UI, plus a reference with curl and WebSocket examples.
-- **Explains itself.** In-app pages walk through the concept and the architecture with live diagrams.
+- **LLM integration that survives a real model.** A provider-agnostic layer over any OpenAI-compatible API (local or
+  hosted), strict JSON-schema output with a fallback for servers that reject it, typed validation, bounded retries and
+  timeouts. A deterministic mock makes the whole system testable without a GPU or an API key.
+- **Guardrails outside the model.** The model only recommends. Actions come from a fixed allowlist implemented in
+  Rust, the backend (not the model) decides what needs approval, and every failure path ends in `FAILED`, never in an
+  executed action.
+- **Human in the loop as a first-class state.** An eight-state run lifecycle with an explicit approval gate,
+  race-safe transitions, and live notifications to the assigned reviewer on any device.
+- **Safe side effects.** An approved action runs exactly once, even after a double click, a retry or a server
+  restart, enforced by the database. Interrupted runs are recovered at startup.
+- **Auditability.** Every run, model request and response, decision and action is recorded with its actor and shown
+  as a timeline.
+- **Real-time product, not a demo script.** WebSocket presence, messaging with offline delivery, live status on
+  desktop and mobile, and a responsive React interface designed for daily use.
+- **Production hygiene.** Argon2id, short-lived JWTs, HttpOnly refresh cookie with rotation, single-use WebSocket
+  tickets, Origin checks, rate limits, OpenAPI 3.1, Docker Compose, CI, and tests at every level.
 
-AgentOps is an MVP: the invoice workflow is a demonstration case, the model is a mock by default, there are two fixed
-roles (operator and reviewer) and the server runs as a single instance.
+## The workflow
 
-Stack: Rust (Axum, Tokio, SQLx) · PostgreSQL 17 · React + Vite + TypeScript · Docker Compose · Caddy.
-
-## How it works
-
-![Architecture](docs/architecture.svg)
-
-Both devices talk only to the server, never to each other. REST carries reads and commands (login, history, cases,
-decisions); the WebSocket pushes what just happened (messages, presence, run status). PostgreSQL is the single source of
-truth. An agent run follows this loop:
+<table>
+<tr>
+<td width="34%"><img src="docs/screenshots/mockup-approval-detail.png" alt="The reviewer's phone: the proposed action, high risk, 48,750 EUR against a typical 4,200 EUR, Approve and Reject buttons"/></td>
+<td><img src="docs/screenshots/demo-two-devices.png" alt="The operator on a laptop and the reviewer on a phone discussing the flagged invoice in the chat"/></td>
+</tr>
+<tr>
+<td><sub>The reviewer sees what the agent proposes and why, then decides.</sub></td>
+<td><sub>Operator and reviewer talk the decision over in real time, on any device.</sub></td>
+</tr>
+</table>
 
 ```mermaid
 flowchart LR
-    O[Operator submits<br/>an invoice] --> A[Agent analyses it]
-    A -->|no action| C[Completed]
-    A -->|error or invalid output| F[Failed]
-    A -->|flag the invoice| G{Reviewer<br/>approves?}
+    O[Operator submits<br/>an invoice] --> A[Agent analyses it<br/>LLM, validated output]
+    A -->|no action needed| C[Completed]
+    A -->|error or invalid output| F[Failed,<br/>nothing executed]
+    A -->|recommends flagging| G{Reviewer<br/>approves?}
     G -->|yes| X[Action executed<br/>exactly once]
     G -->|no| R[Cancelled,<br/>nothing executed]
     X --> C
 ```
 
-Every transition is written to the audit log and pushed to both people over the WebSocket. Details, data model and
-security model: [`docs/architecture.md`](docs/architecture.md).
+## Engineering decisions
+
+| Decision | Why |
+| --- | --- |
+| The model returns a typed recommendation; Rust executes the action | The model can be wrong or manipulated by the invoice text; it can change a recommendation, never add an action |
+| Approval policy lives in the backend | The model's own `requiresApproval` field is ignored; sensitive actions always need a human |
+| `UNIQUE(approval_id)` on executions, inside the business transaction | Exactly-once execution without distributed locks; retries and restarts are safe |
+| Transitions as `UPDATE … WHERE status = expected` | Two concurrent actors cannot both move a run; the loser gets a clean `409` |
+| REST for commands and history, WebSocket for push | PostgreSQL stays the source of truth; a client that missed events just refetches |
+| OpenAI-compatible HTTP client instead of an SDK | One client for local servers (LM Studio) and hosted APIs; full control over retries and error classification |
+| Single Rust process (Axum, Tokio, SQLx) | One deployable unit with typed domain enums, embedded migrations and a low-latency WebSocket hub |
+| OpenAPI generated from the Rust code, checked in CI | The published API description cannot drift from the implementation |
+
+## Architecture
+
+![Architecture](docs/architecture.svg)
+
+Clients only talk to the server, through a single origin. The agent worker runs inside the server process, calls the
+LLM, writes every step to PostgreSQL and pushes status changes over the WebSocket hub. Data model, state machine,
+sequence diagrams and security model: [`docs/architecture.md`](docs/architecture.md).
+
+**Stack:** Rust (Axum, Tokio, SQLx, Utoipa) · PostgreSQL 17 · React 19, TypeScript, TanStack Router and Query,
+Zustand, Tailwind · Docker Compose, Caddy · GitHub Actions · Playwright, Vitest.
+
+**Tests:** 28 backend integration tests against a real PostgreSQL (plus an opt-in test against a real model), 55
+frontend tests, and 3 end-to-end scenarios driving two browsers at once: messaging, approval and rejection.
+
+**Scope:** this is an MVP. The invoice workflow is the demonstration case, the model defaults to the mock, there are
+two roles (operator and reviewer) and the server runs as a single instance.
 
 ## Run it
 
@@ -76,14 +111,15 @@ docker compose up --build          # postgres + backend + demo seed + web
 ```
 
 Open <http://localhost:8080> (Swagger UI at `/api/docs`). From a phone on the same Wi-Fi, open
-`http://<laptop-LAN-IP>:8080`.
+`http://<laptop-LAN-IP>:8080`. To use a real model, set `LLM_MODE=real` and point `LLM_BASE_URL` at any
+OpenAI-compatible endpoint ([details](docs/development.md#4-real-llm-mode)).
 
 Demo accounts (synthetic), password `demo-password-123` for all:
 
 | Username | Role |
 | --- | --- |
-| alice, carol | OPERATOR |
-| bob, dave | REVIEWER |
+| alice, carol | Operator |
+| bob, dave | Reviewer |
 
 ### Host development, hot reload
 
@@ -108,20 +144,19 @@ cd tests/e2e && pnpm install && pnpm exec playwright test   # backend (LLM_MODE=
 Or in containers: `docker compose --profile test run --rm backend-test` and `... run --rm e2e`.
 
 The [development guide](docs/development.md) covers the
-[environment variables](docs/development.md#3-environment-variables), a
-[real LLM](docs/development.md#4-real-llm-mode), the [Docker services](docs/development.md#7-docker-full-stack) and
-[troubleshooting](docs/development.md#8-troubleshooting).
+[environment variables](docs/development.md#3-environment-variables), the
+[Docker services](docs/development.md#7-docker-full-stack) and [troubleshooting](docs/development.md#8-troubleshooting).
 
 ## Repository layout
 
 | Path | Contents |
 | --- | --- |
-| [`backend/`](backend) | Rust API and WebSocket server, SQL migrations; [its README](backend/README.md) maps the modules |
-| [`apps/web/`](apps/web) | React single-page app; [design rules](apps/web/DESIGN.md) |
-| [`contracts/`](contracts) | [`CONTRACT.md`](contracts/CONTRACT.md), the API, WebSocket and state machine contract, and the OpenAPI file |
-| [`tests/e2e/`](tests/e2e) | Playwright tests with two browser contexts |
+| [`backend/`](backend) | Rust API, WebSocket hub, agent worker, LLM layer, SQL migrations; [module map](backend/README.md) |
+| [`apps/web/`](apps/web) | React single-page app for desktop and mobile; [design rules](apps/web/DESIGN.md) |
+| [`contracts/`](contracts) | [`CONTRACT.md`](contracts/CONTRACT.md): REST, WebSocket and state machine contract, plus the OpenAPI file |
+| [`tests/e2e/`](tests/e2e) | Playwright scenarios with two browser contexts |
 | [`infra/`](infra) | Dockerfiles and the Caddy configuration |
-| [`docs/`](docs) | [Architecture](docs/architecture.md), [API reference](docs/api.md), [development guide](docs/development.md), screenshots |
+| [`docs/`](docs) | [Architecture](docs/architecture.md), [API reference](docs/api.md), [development guide](docs/development.md) |
 
 ## Authors
 
