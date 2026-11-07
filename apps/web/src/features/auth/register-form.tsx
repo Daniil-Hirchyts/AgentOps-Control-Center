@@ -102,7 +102,7 @@ export function RegisterForm({ onSuccess }: { onSuccess: (account: AccountCreate
               <label
                 key={opt.value}
                 className={cn(
-                  'flex cursor-pointer items-start gap-3 rounded-md border px-3 py-2.5 transition-colors duration-100 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-ring',
+                  'flex cursor-pointer items-start gap-3 rounded-md border px-3 py-2.5 transition-colors duration-100 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-focus',
                   checked ? 'border-accent-solid bg-accent-subtle' : 'hover:bg-bg-muted',
                 )}
               >
@@ -131,7 +131,7 @@ export function RegisterForm({ onSuccess }: { onSuccess: (account: AccountCreate
       </fieldset>
 
       {serverError && (
-        <p role="alert" className="text-13 text-danger">
+        <p role="alert" className="text-13 text-danger-text">
           {serverError}
         </p>
       )}

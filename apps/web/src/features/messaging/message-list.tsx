@@ -53,23 +53,23 @@ export function MessageList({ messages, meId, otherName, onRetry, onDiscard, foo
                       title={formatDateTime(m.dateEnvoi)}
                       className={cn(
                         'max-w-[82%] min-w-0 leading-normal sm:max-w-[68%]',
-                        mine ? 'bg-accent-solid text-accent-contrast' : 'bg-bg-muted text-text',
-                        mine ? joinsPrev && 'rounded-tr-sm' : joinsPrev && 'rounded-tl-sm',
-                        mine ? joinsNext && 'rounded-br-sm' : joinsNext && 'rounded-bl-sm',
+                        mine ? 'bg-accent-solid text-text-on-accent' : 'bg-bg-muted text-text',
+                        mine ? joinsPrev && 'rounded-se-sm' : joinsPrev && 'rounded-ss-sm',
+                        mine ? joinsNext && 'rounded-ee-sm' : joinsNext && 'rounded-es-sm',
                         m.delivery === 'sending' && 'opacity-60',
-                        m.delivery === 'failed' && 'bg-bg-muted text-text ring-1 ring-danger/60 ring-inset',
+                        m.delivery === 'failed' && 'bg-bg-muted text-text ring-1 ring-danger-solid/60 ring-inset',
                       )}
                     >
                       {m.contenu}
                     </MessageContent>
                   </Message>
                   {m.delivery === 'failed' ? (
-                    <div className={cn('flex', mine ? 'justify-end' : 'pl-9')}>
+                    <div className={cn('flex', mine ? 'justify-end' : 'ps-9')}>
                       <FailedMeta message={m} onRetry={onRetry} onDiscard={onDiscard} />
                     </div>
                   ) : (
                     !joinsNext && (
-                      <p className={cn('mt-1 px-1 text-xs text-text-tertiary tabular-nums', mine ? 'text-right' : 'pl-10')}>
+                      <p className={cn('mt-1 px-1 text-xs text-text-tertiary tabular-nums', mine ? 'text-end' : 'ps-10')}>
                         <time dateTime={m.dateEnvoi}>{formatTime(m.dateEnvoi)}</time>
                         {mine && (m.delivery === 'sending' ? ' · Sending…' : ' · Sent')}
                       </p>
@@ -116,7 +116,7 @@ function FailedMeta({
   onDiscard?: (m: ChatMessage) => void
 }) {
   return (
-    <span className="mt-1 flex items-center gap-1 px-1 text-xs text-danger" data-testid="message-failed" role="alert">
+    <span className="mt-1 flex items-center gap-1 px-1 text-xs text-danger-text" data-testid="message-failed" role="alert">
       {m.failureReason ?? 'Not delivered'}
       {onRetry && (
         <>

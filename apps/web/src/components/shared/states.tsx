@@ -18,7 +18,7 @@ export function EmptyState({
   return (
     <div
       data-testid="empty-state"
-      className={cn('flex flex-col items-start gap-1 py-10 text-left sm:items-center sm:text-center', className)}
+      className={cn('flex flex-col items-start gap-1 py-10 text-start sm:items-center sm:text-center', className)}
     >
       <p className="text-sm font-medium text-text">{title}</p>
       {description && <p className="max-w-sm text-13 text-text-secondary">{description}</p>}
@@ -41,7 +41,7 @@ export function ErrorState({
   return (
     <div role="alert" data-testid="error-state" className={cn('flex flex-col items-start gap-1 py-8', className)}>
       <p className="inline-flex items-center gap-2 text-sm font-medium text-text">
-        <span aria-hidden className="size-2 rounded-full bg-danger-dot" />
+        <span aria-hidden className="size-2 rounded-full bg-danger-solid" />
         {title}
       </p>
       {error !== undefined && <p className="max-w-md text-13 text-text-secondary">{errorMessage(error)}</p>}

@@ -26,7 +26,7 @@ function Count({ n, className }: { n: number; className?: string }) {
   return (
     <span
       className={cn(
-        'inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-accent-solid px-1 text-[11px] font-medium text-accent-contrast tabular-nums',
+        'inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-accent-solid px-1 text-[11px] font-medium text-text-on-accent tabular-nums',
         className,
       )}
     >
@@ -61,8 +61,8 @@ export function AppShell({ children }: { children: ReactNode }) {
   if (isDesktop) {
     return (
       <div className="flex h-dvh overflow-hidden">
-        <aside className="flex w-56 shrink-0 flex-col border-r bg-bg-subtle" aria-label="Main navigation">
-          <div className="flex h-14 items-center justify-between pr-2 pl-5">
+        <aside className="flex w-56 shrink-0 flex-col border-e bg-bg-subtle" aria-label="Main navigation">
+          <div className="flex h-14 items-center justify-between pe-2 ps-5">
             <Wordmark />
             <NotificationBell />
           </div>
@@ -108,7 +108,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <div className="flex h-dvh flex-col overflow-hidden">
       {!immersive && (
-        <header className="flex h-12 shrink-0 items-center gap-1 border-b bg-bg pr-1.5 pl-4 pt-[env(safe-area-inset-top)]">
+        <header className="flex h-12 shrink-0 items-center gap-1 border-b bg-bg pe-1.5 ps-4 pt-[env(safe-area-inset-top)]">
           <Wordmark />
           <div className="flex-1" />
           <ConnectionStatus compact className="px-2" />
@@ -141,7 +141,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               >
                 <Icon className={cn('size-5', active && 'text-accent-text')} strokeWidth={active ? 2 : 1.5} />
                 {item.label}
-                {n > 0 && <Count n={n} className="absolute top-1.5 left-1/2 ml-1.5" />}
+                {n > 0 && <Count n={n} className="absolute top-1.5 left-1/2 ms-1.5" />}
               </Link>
             )
           })}

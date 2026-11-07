@@ -88,7 +88,7 @@ export function RunAnalysisDialog({ caseId, disabled }: { caseId: Id; disabled?:
                   data-testid={`reviewer-option-${r.username}`}
                   onClick={() => setReviewerId(r.id)}
                   className={cn(
-                    'pressable flex h-14 w-full items-center gap-3 rounded-lg border px-3 text-left',
+                    'pressable flex h-14 w-full items-center gap-3 rounded-lg border px-3 text-start',
                     checked ? 'border-accent-solid bg-accent-subtle' : 'hover:bg-bg-subtle',
                   )}
                 >

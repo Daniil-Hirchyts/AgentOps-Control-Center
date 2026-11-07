@@ -55,9 +55,9 @@ function PromptInput({
         }}
         data-invalid={invalid || undefined}
         className={cn(
-          'cursor-text rounded-xl border border-input bg-surface transition-[border-color,box-shadow] duration-150',
-          'focus-within:border-accent-solid focus-within:ring-3 focus-within:ring-ring/15',
-          'data-invalid:border-danger data-invalid:focus-within:ring-danger/15',
+          'cursor-text rounded-xl border border-border-control bg-bg-surface transition-[border-color,box-shadow] duration-150',
+          'focus-within:border-accent-solid focus-within:ring-3 focus-within:ring-focus/15',
+          'data-invalid:border-danger-solid data-invalid:focus-within:ring-danger-solid/15',
           disabled && 'cursor-not-allowed opacity-60',
           className,
         )}

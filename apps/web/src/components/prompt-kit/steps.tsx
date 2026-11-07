@@ -18,7 +18,7 @@ export type StepsTriggerProps = React.ComponentProps<typeof CollapsibleTrigger> 
 export const StepsTrigger = ({ children, className, leftIcon, ...props }: StepsTriggerProps) => (
   <CollapsibleTrigger
     className={cn(
-      'group flex min-h-9 w-full items-center gap-2 rounded-md text-left text-sm text-text-secondary transition-colors duration-150 hover:text-text',
+      'group flex min-h-9 w-full items-center gap-2 rounded-md text-start text-sm text-text-secondary transition-colors duration-150 hover:text-text',
       className,
     )}
     {...props}
@@ -50,7 +50,7 @@ export const StepsContent = ({ children, className, bar, ...props }: StepsConten
 )
 
 export const StepsBar = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
-  <div className={cn('ml-[7px] h-full w-px bg-border', className)} aria-hidden {...props} />
+  <div className={cn('ms-[7px] h-full w-px bg-border', className)} aria-hidden {...props} />
 )
 
 export function Steps({ defaultOpen = true, ...props }: React.ComponentProps<typeof Collapsible>) {

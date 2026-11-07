@@ -43,7 +43,7 @@ export function Composer({ onSend, onTyping, onStopTyping, disabled, placeholder
         }}
         onSubmit={submit}
         invalid={tooLong}
-        className="mx-auto flex max-w-3xl items-end gap-1 pr-1.5"
+        className="mx-auto flex max-w-3xl items-end gap-1 pe-1.5"
       >
         <PromptInputTextarea
           placeholder={placeholder}
@@ -58,7 +58,7 @@ export function Composer({ onSend, onTyping, onStopTyping, disabled, placeholder
           {text.length > MAX_MESSAGE_LENGTH - 500 && (
             <span
               id="char-counter"
-              className={cn('px-1 text-xs tabular-nums', tooLong ? 'text-danger' : 'text-text-tertiary')}
+              className={cn('px-1 text-xs tabular-nums', tooLong ? 'text-danger-text' : 'text-text-tertiary')}
               data-testid="char-counter"
             >
               {text.length}/{MAX_MESSAGE_LENGTH}
@@ -70,7 +70,7 @@ export function Composer({ onSend, onTyping, onStopTyping, disabled, placeholder
             aria-label="Send message"
             data-testid="send-button"
             onClick={(e) => e.stopPropagation()}
-            className="pressable relative inline-flex size-8 items-center after:absolute after:-inset-1.5 after:content-[''] after:rounded-xl justify-center rounded-lg bg-accent-solid text-accent-contrast hover:bg-accent-solid-hover disabled:bg-bg-muted disabled:text-text-tertiary"
+            className="pressable relative inline-flex size-8 items-center after:absolute after:-inset-1.5 after:content-[''] after:rounded-xl justify-center rounded-lg bg-accent-solid text-text-on-accent hover:bg-accent-solid-hover disabled:bg-bg-muted disabled:text-text-tertiary"
           >
             <ArrowUp className="size-4" strokeWidth={2} />
           </button>

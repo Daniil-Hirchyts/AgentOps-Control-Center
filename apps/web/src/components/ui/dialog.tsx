@@ -37,7 +37,7 @@ function DialogContent({
       <DialogPrimitive.Content
         data-slot="dialog-content"
         className={cn(
-          'fixed z-50 grid gap-5 overflow-y-auto overscroll-contain border border-transparent bg-surface p-5 text-text shadow-overlay outline-none sm:p-6',
+          'fixed z-50 grid gap-5 overflow-y-auto overscroll-contain border border-transparent bg-bg-surface p-5 text-text shadow-overlay outline-none sm:p-6',
           // phone: bottom sheet
           'inset-x-0 bottom-0 max-h-[92dvh] rounded-t-xl pb-[max(1.25rem,env(safe-area-inset-bottom))]',
           'data-[state=open]:animate-in data-[state=open]:slide-in-from-bottom data-[state=open]:duration-300 data-[state=open]:ease-(--ease-drawer)',
@@ -52,7 +52,7 @@ function DialogContent({
       >
         {children}
         {showClose && (
-          <DialogPrimitive.Close className="pressable absolute top-3 right-3 inline-flex size-9 items-center justify-center rounded-md text-text-tertiary hover:bg-bg-muted hover:text-text">
+          <DialogPrimitive.Close className="pressable absolute top-3 end-3 inline-flex size-9 items-center justify-center rounded-md text-text-tertiary hover:bg-bg-muted hover:text-text">
             <XIcon className="size-4" />
             <span className="sr-only">Close</span>
           </DialogPrimitive.Close>
@@ -63,7 +63,7 @@ function DialogContent({
 }
 
 function DialogHeader({ className, ...props }: React.ComponentProps<'div'>) {
-  return <div data-slot="dialog-header" className={cn('flex flex-col gap-1 pr-8 text-left', className)} {...props} />
+  return <div data-slot="dialog-header" className={cn('flex flex-col gap-1 pe-8 text-start', className)} {...props} />
 }
 
 function DialogFooter({ className, ...props }: React.ComponentProps<'div'>) {

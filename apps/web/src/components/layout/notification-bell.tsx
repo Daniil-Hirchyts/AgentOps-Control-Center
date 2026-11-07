@@ -32,7 +32,7 @@ export function NotificationBell() {
           {unread > 0 && (
             <span
               data-testid="notification-count"
-              className="absolute top-1 right-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-accent-solid px-1 text-[10px] font-semibold text-accent-contrast tabular-nums ring-2 ring-bg"
+              className="absolute top-1 end-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-accent-solid px-1 text-[10px] font-semibold text-text-on-accent tabular-nums ring-2 ring-bg"
             >
               {unread > 9 ? '9+' : unread}
             </span>
@@ -45,7 +45,7 @@ export function NotificationBell() {
           {unread > 0 && (
             <button
               type="button"
-              className="-mr-2 h-8 rounded-md px-2 text-13 text-text-secondary hover:text-text"
+              className="-me-2 h-8 rounded-md px-2 text-13 text-text-secondary hover:text-text"
               onClick={markAllRead}
             >
               Mark all read

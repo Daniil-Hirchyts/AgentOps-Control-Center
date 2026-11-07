@@ -10,12 +10,12 @@ import {
 import type { ApprovalStatus, CaseStatus, RiskLevel, RunStatus } from '@/lib/types'
 
 const DOT: Record<Tone, string> = {
-  neutral: 'bg-neutral-dot',
+  neutral: 'bg-neutral-solid',
   progress: 'bg-text-secondary animate-pulse-soft',
-  success: 'bg-success-dot',
-  warning: 'bg-warning-dot',
-  danger: 'bg-danger-dot',
-  muted: 'border border-neutral-dot bg-transparent',
+  success: 'bg-success-solid',
+  warning: 'bg-warning-solid',
+  danger: 'bg-danger-solid',
+  muted: 'border border-neutral-solid bg-transparent',
 }
 
 export function Dot({ tone, className }: { tone: Tone; className?: string }) {

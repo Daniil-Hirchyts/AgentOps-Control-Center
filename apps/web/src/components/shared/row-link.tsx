@@ -9,7 +9,7 @@ export function RowLink({ className, ...props }: LinkComponentProps<'a'>) {
   return (
     <Link
       className={cn(
-        'outline-none after:absolute after:inset-0 after:content-[""] focus-visible:after:rounded-md focus-visible:after:outline-2 focus-visible:after:-outline-offset-2 focus-visible:after:outline-ring',
+        'outline-none after:absolute after:inset-0 after:content-[""] focus-visible:after:rounded-md focus-visible:after:outline-2 focus-visible:after:-outline-offset-2 focus-visible:after:outline-focus',
         className,
       )}
       {...props}

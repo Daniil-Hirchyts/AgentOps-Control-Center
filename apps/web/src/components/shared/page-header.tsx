@@ -7,9 +7,9 @@ export function BackLink({ to, children }: { to: string; children: ReactNode }) 
   return (
     <Link
       to={to}
-      className="-ml-1.5 inline-flex h-8 items-center gap-0.5 rounded-md pr-2 pl-1 text-13 text-text-secondary transition-colors duration-150 hover:text-text"
+      className="-ms-1.5 inline-flex h-8 items-center gap-0.5 rounded-md ps-1 pe-2 text-13 text-text-secondary transition-colors duration-150 hover:text-text"
     >
-      <ChevronLeft className="size-4" strokeWidth={1.5} />
+      <ChevronLeft className="size-4 rtl:rotate-180" strokeWidth={1.5} />
       {children}
     </Link>
   )
@@ -42,7 +42,7 @@ export function PageHeader({
   )
 }
 
-/** Flat section with a small heading; sections are separated by whitespace, not cards. */
+/** Section with a heading; groups are separated by space (≥ 2× the inner gap), not rules. */
 export function Section({
   title,
   aside,
@@ -58,8 +58,8 @@ export function Section({
   return (
     <section className={cn('min-w-0', className)} {...props}>
       {(title || aside) && (
-        <div className="mb-3 flex min-h-8 items-center justify-between gap-3 border-b pb-2">
-          {title && <h2 className="shrink-0 text-13 font-medium text-text">{title}</h2>}
+        <div className="mb-3 flex min-h-8 items-center justify-between gap-3">
+          {title && <h2 className="shrink-0 text-sm font-semibold text-text">{title}</h2>}
           {aside && <div className="flex min-w-0 items-center justify-end gap-2 text-13">{aside}</div>}
         </div>
       )}

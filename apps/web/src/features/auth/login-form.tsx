@@ -64,7 +64,7 @@ export function LoginForm({ onSuccess }: { onSuccess: (session: LoginResponse) =
       </FormField>
 
       {serverError && (
-        <p role="alert" data-testid="login-error" className="text-13 text-danger">
+        <p role="alert" data-testid="login-error" className="text-13 text-danger-text">
           {serverError}
         </p>
       )}
@@ -82,7 +82,7 @@ export function LoginForm({ onSuccess }: { onSuccess: (session: LoginResponse) =
               key={a.username}
               type="button"
               onClick={() => fillDemo(a.username)}
-              className="pressable flex h-10 items-center justify-between rounded-md border px-3 text-left text-13 hover:bg-bg-muted"
+              className="pressable flex h-10 items-center justify-between rounded-md border px-3 text-start text-13 hover:bg-bg-muted"
             >
               <span className="font-medium">{a.username}</span>
               <span className="text-text-tertiary">{a.role}</span>

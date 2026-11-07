@@ -10,7 +10,7 @@ export function PresenceDot({ online, username, className }: { online: boolean; 
       aria-hidden
       className={cn(
         'inline-block size-2 shrink-0 rounded-full',
-        online ? 'bg-success-dot' : 'border border-neutral-dot bg-transparent',
+        online ? 'bg-success-solid' : 'border border-neutral-solid bg-transparent',
         className,
       )}
     />
@@ -52,7 +52,7 @@ export function UserAvatar({
         {initials(username)}
       </span>
       {online !== undefined && (
-        <span className="absolute -right-0.5 -bottom-0.5 rounded-full bg-surface p-[2px]">
+        <span className="absolute -end-0.5 -bottom-0.5 rounded-full bg-bg-surface p-[2px]">
           <PresenceDot online={online} username={username} className="block" />
         </span>
       )}

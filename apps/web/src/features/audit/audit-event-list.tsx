@@ -42,7 +42,7 @@ function AuditItem({ event: e }: { event: AuditEventDto }) {
   )
   return (
     <li className="relative" data-testid="audit-event" data-event-type={e.eventType}>
-      <Dot tone={tone} className="absolute top-[7px] -left-4 size-[7px] ring-2 ring-bg" />
+      <Dot tone={tone} className="absolute top-[7px] -start-4 size-[7px] ring-2 ring-bg" />
       {hasPayload ? (
         <details className="group">
           <summary

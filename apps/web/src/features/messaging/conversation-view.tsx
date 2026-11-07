@@ -38,7 +38,7 @@ export function ConversationView({ userId }: { userId: Id }) {
 
   return (
     <div className="flex h-full min-h-0 flex-col" data-testid="conversation">
-      <header className="flex h-14 shrink-0 items-center gap-2 border-b bg-bg pr-4 pl-1 sm:gap-3 pt-[env(safe-area-inset-top)] sm:px-6 md:pt-0">
+      <header className="flex h-14 shrink-0 items-center gap-2 border-b bg-bg pe-4 ps-1 sm:gap-3 pt-[env(safe-area-inset-top)] sm:px-6 md:pt-0">
         <Link
           to="/messages"
           aria-label="Back to conversations"

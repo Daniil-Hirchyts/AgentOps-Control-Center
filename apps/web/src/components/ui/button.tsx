@@ -13,20 +13,20 @@ const buttonVariants = cva(
     variants: {
       variant: {
         /** The one filled action per view. */
-        primary: 'bg-accent-solid text-accent-contrast hover:bg-accent-solid-hover',
+        primary: 'bg-accent-solid text-text-on-accent hover:bg-accent-solid-hover',
         secondary:
-          'border border-transparent bg-surface text-text shadow-elevated hover:bg-bg-subtle',
+          'border border-transparent bg-bg-surface text-text shadow-border hover:bg-bg-subtle',
         ghost: 'text-text-secondary hover:bg-bg-muted hover:text-text',
         /** Destructive confirmation inside a dialog. */
         danger: 'bg-danger-solid text-white hover:opacity-90',
         /** Outline-ish destructive trigger that does not compete with the primary action. */
-        'danger-soft': 'border border-transparent bg-surface text-danger shadow-elevated hover:bg-bg-subtle',
+        'danger-soft': 'border border-transparent bg-bg-surface text-danger-text shadow-border hover:bg-bg-subtle',
         link: 'h-auto px-0 text-accent-text underline-offset-4 hover:underline',
       },
       size: {
-        sm: 'h-8 px-2.5 text-13 has-[>svg:first-child]:pl-2',
-        md: 'h-9 px-3.5 has-[>svg:first-child]:pl-3',
-        lg: 'h-11 px-5 text-sm has-[>svg:first-child]:pl-4',
+        sm: 'h-8 px-2.5 text-13 has-[>svg:first-child]:ps-2',
+        md: 'h-9 px-3.5 has-[>svg:first-child]:ps-3',
+        lg: 'h-11 px-5 text-sm has-[>svg:first-child]:ps-4',
         icon: 'size-9',
         'icon-sm': 'size-8',
       },

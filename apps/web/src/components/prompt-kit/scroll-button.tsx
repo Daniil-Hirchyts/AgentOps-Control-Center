@@ -19,7 +19,7 @@ function ScrollButton({ className, ...props }: ScrollButtonProps) {
       aria-hidden={isAtBottom}
       data-motion="transform"
       className={cn(
-        'pressable inline-flex size-9 items-center justify-center rounded-full border border-transparent bg-surface text-text-secondary shadow-overlay hover:text-text',
+        'pressable inline-flex size-9 items-center justify-center rounded-full border border-transparent bg-bg-surface text-text-secondary shadow-overlay hover:text-text',
         'transition-[opacity,transform] duration-200 ease-out',
         isAtBottom ? 'pointer-events-none translate-y-2 scale-95 opacity-0' : 'translate-y-0 scale-100 opacity-100',
         className,

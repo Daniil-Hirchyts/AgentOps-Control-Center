@@ -31,7 +31,7 @@ export function ContactList({ selectedUserId }: { selectedUserId?: Id }) {
         <div className="relative">
           <Search
             strokeWidth={1.5}
-            className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-text-tertiary"
+            className="pointer-events-none absolute top-1/2 start-2.5 size-4 -translate-y-1/2 text-text-tertiary"
           />
           <Input
             type="search"
@@ -39,7 +39,7 @@ export function ContactList({ selectedUserId }: { selectedUserId?: Id }) {
             onChange={(e) => setFilter(e.target.value)}
             placeholder="Search people"
             aria-label="Search people"
-            className="h-9 pl-8"
+            className="h-9 ps-8"
           />
         </div>
       </div>
@@ -50,7 +50,7 @@ export function ContactList({ selectedUserId }: { selectedUserId?: Id }) {
           <ErrorState className="px-2" error={error} onRetry={() => void refetch()} />
         ) : visible.length === 0 ? (
           <EmptyState
-            className="px-2 sm:items-start sm:text-left"
+            className="px-2 sm:items-start sm:text-start"
             title={filter ? 'Nobody matches that name' : 'No one else here yet'}
             description={filter ? undefined : 'People appear here once they create an account.'}
           />
@@ -87,7 +87,7 @@ export function ContactList({ selectedUserId }: { selectedUserId?: Id }) {
                       <span
                         data-testid={`unread-${c.username}`}
                         aria-label={`${count} unread`}
-                        className="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-accent-solid px-1 text-[11px] font-medium text-accent-contrast tabular-nums"
+                        className="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-accent-solid px-1 text-[11px] font-medium text-text-on-accent tabular-nums"
                       >
                         {count > 99 ? '99+' : count}
                       </span>

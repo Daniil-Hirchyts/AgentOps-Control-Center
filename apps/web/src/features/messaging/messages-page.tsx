@@ -12,7 +12,7 @@ export function MessagesPage({ selectedUserId }: { selectedUserId?: Id }) {
     <div className="flex h-full min-h-0" data-testid="messages-page">
       <aside
         className={cn(
-          'min-h-0 w-full flex-col md:flex md:w-72 md:shrink-0 md:border-r',
+          'min-h-0 w-full flex-col md:flex md:w-72 md:shrink-0 md:border-e',
           hasSelection ? 'hidden' : 'flex',
         )}
         aria-label="Conversations"

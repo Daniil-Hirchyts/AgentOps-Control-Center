@@ -37,7 +37,7 @@ export function UserMenu({ compact = false }: { compact?: boolean }) {
           data-testid="user-menu"
           aria-label={`Account: ${user.username}`}
           className={cn(
-            'pressable flex items-center gap-2.5 rounded-md text-left hover:bg-bg-muted',
+            'pressable flex items-center gap-2.5 rounded-md text-start hover:bg-bg-muted',
             compact ? 'size-9 justify-center' : 'h-11 w-full px-2',
           )}
         >
