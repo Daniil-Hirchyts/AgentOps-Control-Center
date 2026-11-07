@@ -237,10 +237,12 @@ This writes `desktop-messaging.png`, `mobile-messaging.png`, `desktop-run-awaiti
 `demo-two-devices.png` and `mockup-*.png` show the same screens inside laptop and phone frames (Apple Design
 Resources, not stored in the repository).
 
-The architecture figure `docs/architecture.svg` is drawn in TikZ (`docs/architecture-diagram.tex`):
+The architecture figure (`docs/architecture.png`, plus an SVG copy) is drawn in TikZ (`docs/architecture-diagram.tex`):
 
 ```bash
-cd docs && pdflatex -output-directory /tmp architecture-diagram.tex && pdftocairo -svg /tmp/architecture-diagram.pdf architecture.svg
+cd docs && pdflatex -output-directory /tmp architecture-diagram.tex
+pdftocairo -png -r 400 -singlefile /tmp/architecture-diagram.pdf architecture
+pdftocairo -svg /tmp/architecture-diagram.pdf architecture.svg
 ```
 
 ## 7. Docker full stack
