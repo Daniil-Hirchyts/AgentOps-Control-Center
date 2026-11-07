@@ -1,4 +1,5 @@
 import { useAuthStore } from '@/stores/auth'
+import { recordFrame } from '@/stores/traffic'
 import type {
   AccountCreated,
   AgentRunDto,
@@ -48,7 +49,7 @@ export class ApiError extends Error {
 export function errorMessage(err: unknown): string {
   if (err instanceof ApiError) return err.message
   if (err instanceof Error) return err.message
-  return 'Something went wrong'
+  return 'The server did not answer.'
 }
 
 type Query = Record<string, string | number | boolean | null | undefined>
@@ -184,6 +185,7 @@ export async function request<T>(path: string, opts: RequestOptions = {}): Promi
       throw await parseError(res)
     }
   }
+  recordFrame({ channel: 'rest', dir: 'out', label: `${method} /api${path}`, detail: String(res.status) })
   if (!res.ok) throw await parseError(res)
   return readBody<T>(res)
 }

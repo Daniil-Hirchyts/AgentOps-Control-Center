@@ -18,13 +18,13 @@ export function ConceptPage() {
   return (
     <PageContainer className="max-w-5xl">
       <header className="mb-12 max-w-2xl sm:mb-16">
-        <p className="mb-3 text-13 font-medium text-accent-text">Concept</p>
-        <h1 className="text-3xl font-semibold tracking-[-0.03em] sm:text-[2.5rem] sm:leading-[1.1]">
+        <p className="mb-3 animate-fade-up text-13 font-medium text-accent-text">Concept</p>
+        <h1 className="animate-fade-up text-3xl font-semibold tracking-[-0.03em] text-balance [animation-delay:100ms] sm:text-[2.5rem] sm:leading-[1.1]">
           A messenger where an AI may propose, but only a person can approve.
         </h1>
-        <p className="mt-4 text-base text-text-secondary">
-          The project started as an instant messenger between two devices. AgentOps gives the two people a reason to talk: an AI
-          agent checks invoices, and when it wants to act on one, a human has to say yes first.
+        <p className="mt-4 animate-fade-up text-base text-pretty text-text-secondary [animation-delay:200ms]">
+          The project started as an instant messenger between two devices. AgentOps gives the two people a reason to talk: an AI agent
+          checks invoices, and when it wants to act on one, a human has to say yes first.
         </p>
       </header>
 
@@ -33,14 +33,14 @@ export function ConceptPage() {
           <div className="rounded-3xl bg-hue-stone p-6 sm:p-8">
             <p className="text-lg font-semibold tracking-[-0.01em]">The accounts-payable team of a fictional company.</p>
             <p className="mt-3 text-sm text-text-secondary">
-              Vendors send invoices. Most are routine, but some are not: a bill five times the usual amount, the same work billed
-              twice, a large first invoice from a vendor nobody knows. Checking each one by hand is slow, so an agent reads them
-              first.
+              Vendors send invoices. Most are routine, but some are not: a bill five times the usual amount, the same work billed twice, a
+              large first invoice from a vendor nobody knows. Checking each one by hand is slow, so an agent reads them first.
             </p>
             <p className="mt-3 text-sm text-text-secondary">
-              When the agent finds something odd it proposes to <strong className="font-medium text-text">flag the invoice for review</strong>.
-              That changes the company’s records, so it is never done automatically: the request goes to a reviewer, who discusses
-              it with the operator in the chat and approves or rejects it.
+              When the agent finds something odd it proposes to{' '}
+              <strong className="font-medium text-text">flag the invoice for review</strong>. That changes the company’s records, so it is
+              never done automatically: the request goes to a reviewer, who discusses it with the operator in the chat and approves or
+              rejects it.
             </p>
           </div>
           <div className="flex flex-col gap-5 rounded-3xl bg-bg-subtle p-6 sm:p-8">
@@ -60,10 +60,26 @@ export function ConceptPage() {
             title="People"
             subtitle="Real users, each on their own device"
             rows={[
-              { avatar: <UserAvatar username="alice" size="lg" />, name: 'Alice · Operator', text: 'Opens a case for an invoice, starts the analysis and picks who reviews it.' },
-              { avatar: <UserAvatar username="carol" size="lg" />, name: 'Carol · Operator', text: 'A second operator, so you can see two people working the same queue.' },
-              { avatar: <UserAvatar username="bob" size="lg" />, name: 'Bob · Reviewer', text: 'Gets approval requests in real time, reads the evidence, then approves or rejects. Only a reviewer can.' },
-              { avatar: <UserAvatar username="dave" size="lg" />, name: 'Dave · Reviewer', text: 'A second reviewer. An approval assigned to Bob cannot be decided by Dave.' },
+              {
+                avatar: <UserAvatar username="alice" size="lg" />,
+                name: 'Alice · Operator',
+                text: 'Opens a case for an invoice, starts the analysis and picks who reviews it.',
+              },
+              {
+                avatar: <UserAvatar username="carol" size="lg" />,
+                name: 'Carol · Operator',
+                text: 'A second operator, so you can see two people working the same queue.',
+              },
+              {
+                avatar: <UserAvatar username="bob" size="lg" />,
+                name: 'Bob · Reviewer',
+                text: 'Gets approval requests in real time, reads the evidence, then approves or rejects. Only a reviewer can.',
+              },
+              {
+                avatar: <UserAvatar username="dave" size="lg" />,
+                name: 'Dave · Reviewer',
+                text: 'A second reviewer. An approval assigned to Bob cannot be decided by Dave.',
+              },
             ]}
           />
           <Cast
@@ -81,8 +97,8 @@ export function ConceptPage() {
       <Block title="What a case is">
         <p className="mb-6 max-w-2xl text-sm text-text-secondary">
           A case is <strong className="font-medium text-text">one invoice under investigation</strong>: vendor, amount, issue date, a short
-          description, and the vendor’s typical amount if we have history. The agent compares the amount with that typical amount.
-          These are the four kinds of case you can create from the “New case” dialog, and what the agent will do with each.
+          description, and the vendor’s typical amount if we have history. The agent compares the amount with that typical amount. These are
+          the four kinds of case you can create from the “New case” dialog, and what the agent will do with each.
         </p>
         <div className="grid gap-3 sm:grid-cols-2">
           {SCENARIOS.map((s) => {
@@ -173,27 +189,60 @@ function Rules() {
         ))}
       </dl>
       <p className="mt-6 text-13 text-text-tertiary">
-        Thresholds of the mock model: more than 3× the typical amount, or 10 000 and above, is high; 5 000 and above is medium;
-        everything else is low.
+        Thresholds of the mock model: more than 3× the typical amount, or 10 000 and above, is high; 5 000 and above is medium; everything
+        else is low.
       </p>
     </div>
   )
 }
 
 const STORY: { who: ReactNode; title: string; text: string; gate?: boolean }[] = [
-  { who: <UserAvatar username="alice" size="lg" />, title: 'Alice opens a case', text: 'An invoice from Northwind Consulting looks expensive. She enters it, or picks the “Price spike” scenario.' },
-  { who: <UserAvatar username="alice" size="lg" />, title: 'She runs the analysis and chooses Bob', text: 'The run is queued. Bob will be the only person allowed to approve whatever the agent proposes.' },
-  { who: <AgentAvatar agent={AGENTS.analyst} size="lg" />, title: 'The Invoice Risk Analyst reads it', text: '€48,250 against a typical €9,800: 4.9×. High risk. It proposes to flag the invoice and explains why.' },
-  { who: <AgentAvatar agent={AGENTS.gatekeeper} size="lg" />, title: 'The gate closes', text: 'Flagging changes records, so an approval is opened for Bob. Nothing runs until he decides.', gate: true },
-  { who: <AgentAvatar agent={AGENTS.relay} size="lg" />, title: 'Bob’s phone lights up', text: 'The Realtime Relay pushes the request over the WebSocket. Bob sees it in his inbox without refreshing.' },
-  { who: <UserAvatar username="bob" size="lg" />, title: 'They talk it over', text: 'Bob asks Alice in the chat whether there is a purchase order. Messages arrive instantly on both devices.' },
-  { who: <UserAvatar username="bob" size="lg" />, title: 'Bob approves, or rejects', text: 'Approve: the action is released. Reject: the run is cancelled and nothing is executed.' },
-  { who: <AgentAvatar agent={AGENTS.executor} size="lg" />, title: 'The action runs once', text: 'The case is marked “Flagged for review”. Every step above is in the audit log, with who did it and when.' },
+  {
+    who: <UserAvatar username="alice" size="lg" />,
+    title: 'Alice opens a case',
+    text: 'An invoice from Northwind Consulting looks expensive. She enters it, or picks the “Price spike” scenario.',
+  },
+  {
+    who: <UserAvatar username="alice" size="lg" />,
+    title: 'She runs the analysis and chooses Bob',
+    text: 'The run is queued. Bob will be the only person allowed to approve whatever the agent proposes.',
+  },
+  {
+    who: <AgentAvatar agent={AGENTS.analyst} size="lg" />,
+    title: 'The Invoice Risk Analyst reads it',
+    text: '€48,250 against a typical €9,800: 4.9×. High risk. It proposes to flag the invoice and explains why.',
+  },
+  {
+    who: <AgentAvatar agent={AGENTS.gatekeeper} size="lg" />,
+    title: 'The gate closes',
+    text: 'Flagging changes records, so an approval is opened for Bob. Nothing runs until he decides.',
+    gate: true,
+  },
+  {
+    who: <AgentAvatar agent={AGENTS.relay} size="lg" />,
+    title: 'Bob’s phone lights up',
+    text: 'The Realtime Relay pushes the request over the WebSocket. Bob sees it in his inbox without refreshing.',
+  },
+  {
+    who: <UserAvatar username="bob" size="lg" />,
+    title: 'They talk it over',
+    text: 'Bob asks Alice in the chat whether there is a purchase order. Messages arrive instantly on both devices.',
+  },
+  {
+    who: <UserAvatar username="bob" size="lg" />,
+    title: 'Bob approves, or rejects',
+    text: 'Approve: the action is released. Reject: the run is cancelled and nothing is executed.',
+  },
+  {
+    who: <AgentAvatar agent={AGENTS.executor} size="lg" />,
+    title: 'The action runs once',
+    text: 'The case is marked “Flagged for review”. Every step above is in the audit log, with who did it and when.',
+  },
 ]
 
 function Block({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section className="mb-16 sm:mb-20">
+    <section className="mb-16 animate-fade-up [animation-delay:300ms] sm:mb-20 [&~&]:animate-none">
       <h2 className="mb-5 text-xl font-semibold tracking-[-0.02em] sm:text-2xl">{title}</h2>
       {children}
     </section>

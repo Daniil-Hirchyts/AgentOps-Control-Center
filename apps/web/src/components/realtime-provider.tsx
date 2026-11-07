@@ -1,4 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query'
+import { recordFrame } from '@/stores/traffic'
 import { useRouter } from '@tanstack/react-router'
 import { type ReactNode, useEffect, useMemo, useRef } from 'react'
 import { api } from '@/lib/api'
@@ -23,6 +24,7 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
       onStatus: setStatus,
       onOpen: () => invalidateOnConnect(qc),
       onEvent: (event) => {
+        recordFrame({ channel: 'ws', dir: 'in', label: event.type, detail: event.type === 'agent_status' ? event.status : undefined })
         const me = useAuthStore.getState().user
         if (!me) return
         handleServerEvent(event, { qc, me, navigate: (href) => router.history.push(href) })
@@ -45,7 +47,11 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
     }
   }, [userId, qc, router])
 
-  const value = useMemo<RealtimeApi>(() => ({ send: (frame) => clientRef.current?.send(frame) ?? false }), [])
+  const value = useMemo<RealtimeApi>(() => ({ send: (frame) => {
+        const ok = clientRef.current?.send(frame) ?? false
+        if (ok) recordFrame({ channel: 'ws', dir: 'out', label: frame.type })
+        return ok
+      }, }), [])
 
   return <RealtimeContext.Provider value={value}>{children}</RealtimeContext.Provider>
 }
