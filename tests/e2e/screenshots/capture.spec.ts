@@ -34,7 +34,7 @@ test('capture report screenshots (alice desktop operator, bob mobile reviewer)',
   await desk.getByTestId('run-analysis-button').click();
   await desk.getByTestId('reviewer-option-bob').click();
   await desk.getByTestId('start-run-submit').click();
-  await expect(desk.getByTestId('run-status').first()).toContainText(/awaiting approval/i);
+  await expect(desk.getByTestId('run-status').first()).toContainText(/awaiting approval/i, { timeout: 120_000 }); // a real model takes a few seconds
   await desk.waitForTimeout(1200); // let the pipeline nodes finish their transition
   await desk.screenshot({ path: `${OUT}/desktop-run-awaiting-approval.png` });
 
@@ -45,12 +45,12 @@ test('capture report screenshots (alice desktop operator, bob mobile reviewer)',
     await p.getByTestId('message-input').fill(t);
     await p.getByTestId('send-button').click();
   };
-  await send(desk, "Bonjour Bob, l'agent signale la facture INV-2026-0912 : 48 750 € pour une moyenne de 4 200 €.");
+  await send(desk, 'Hi Bob, the agent flagged invoice INV-2026-0912: 48,750 EUR against a typical 4,200 EUR.');
   await expect(phone.getByTestId('message-bubble').last()).toContainText('INV-2026-0912');
-  await send(phone, 'Je regarde la proposition de l’agent tout de suite.');
-  await expect(desk.getByTestId('message-bubble').last()).toContainText('tout de suite');
-  await send(desk, 'Merci, aucun bon de commande ne correspond.');
-  await expect(phone.getByTestId('message-bubble').last()).toContainText('bon de commande');
+  await send(phone, 'Looking at the agent’s proposal right now.');
+  await expect(desk.getByTestId('message-bubble').last()).toContainText('right now');
+  await send(desk, 'Thanks. No purchase order matches it either.');
+  await expect(phone.getByTestId('message-bubble').last()).toContainText('purchase order');
   // Let the message-enter transition (200ms) and presence settle before capturing.
   await expect(desk.getByTestId(`contact-bob`)).toContainText('Online');
   await desk.waitForTimeout(400);
