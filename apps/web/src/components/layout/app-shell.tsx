@@ -1,11 +1,12 @@
 import { Link, useRouterState } from '@tanstack/react-router'
 import { PanelLeftClose, PanelLeftOpen } from 'lucide-react'
-import { type ReactNode, useEffect } from 'react'
+import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react'
 import { Tooltip } from '@/components/ui/tooltip'
 import { ConnectionStatus } from '@/components/shared/connection-pill'
 import { useApprovals } from '@/features/approvals/hooks'
 import { useUsers } from '@/features/messaging/hooks'
 import { DESKTOP_QUERY, useMediaQuery } from '@/lib/hooks'
+import { Wordmark as BrandWordmark } from '@/components/shared/logo'
 import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/stores/auth'
 import { selectTotalUnreadMessages, useRealtimeStore } from '@/stores/realtime'
@@ -40,23 +41,9 @@ function Count({ n, className }: { n: number; className?: string }) {
 
 export function Wordmark({ className }: { className?: string }) {
   return (
-    <Link
-      to="/"
-      className={cn('inline-flex h-8 items-center gap-2 rounded-md text-[15px] font-semibold tracking-[-0.02em] text-text', className)}
-    >
-      <LogoMark />
-      AgentOps
+    <Link to="/" aria-label="AgentOps, home" className={cn('inline-flex h-8 items-center rounded-lg', className)}>
+      <BrandWordmark />
     </Link>
-  )
-}
-
-/** Two people and one agent around a gate: a rounded square with an opening. */
-function LogoMark() {
-  return (
-    <svg viewBox="0 0 20 20" className="size-5" aria-hidden>
-      <rect x="1.5" y="1.5" width="17" height="17" rx="5" fill="none" stroke="currentColor" strokeWidth="2.2" />
-      <rect x="6.5" y="6.5" width="7" height="7" rx="2" className="fill-hue-blue" />
-    </svg>
   )
 }
 
@@ -75,6 +62,30 @@ function useSidebarShortcut(toggle: () => void) {
   }, [toggle])
 }
 
+/** First focusable element on every page: jumps past the navigation. */
+function SkipLink() {
+  return (
+    <a
+      href="#main"
+      className="fixed top-2 start-2 z-[60] -translate-y-16 rounded-full bg-ink px-4 py-2 text-13 font-medium text-text-on-ink transition-transform duration-150 focus-visible:translate-y-0"
+    >
+      Skip to content
+    </a>
+  )
+}
+
+/** A client-side route change resets nothing: move focus to the new view, except on first load. */
+function useFocusMainOnNavigate(pathname: string) {
+  const first = useRef(true)
+  useEffect(() => {
+    if (first.current) {
+      first.current = false
+      return
+    }
+    document.getElementById('main')?.focus({ preventScroll: true })
+  }, [pathname])
+}
+
 function navTestId(item: NavItem) {
   return `nav-${item.label.toLowerCase().replace(/\s+/g, '-')}`
 }
@@ -90,17 +101,22 @@ export function AppShell({ children }: { children: ReactNode }) {
   const badgeFor = (i: NavItem) => (i.badge ? badges[i.badge] : 0)
   // On phones an open conversation is a full-screen view with its own header and pinned composer.
   const immersive = !isDesktop && /^\/messages\/[^/]+/.test(pathname)
+  useFocusMainOnNavigate(pathname)
 
   if (isDesktop) {
     return (
-      <DesktopShell pathname={pathname} badgeFor={badgeFor}>
-        {children}
-      </DesktopShell>
+      <>
+        <SkipLink />
+        <DesktopShell pathname={pathname} badgeFor={badgeFor}>
+          {children}
+        </DesktopShell>
+      </>
     )
   }
 
   return (
     <div className="flex h-dvh flex-col overflow-hidden">
+      <SkipLink />
       {!immersive && (
         <header className="flex h-12 shrink-0 items-center gap-1 border-b bg-bg pe-1.5 ps-4 pt-[env(safe-area-inset-top)]">
           <Wordmark />
@@ -110,7 +126,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           <UserMenu compact />
         </header>
       )}
-      <main className="relative min-h-0 flex-1 overflow-y-auto" id="main">
+      <main className="relative min-h-0 flex-1 overflow-y-auto outline-none" id="main" tabIndex={-1}>
         {children}
       </main>
       {!immersive && (
@@ -145,84 +161,114 @@ export function AppShell({ children }: { children: ReactNode }) {
   )
 }
 
-function DesktopShell({
-  pathname,
-  badgeFor,
-  children,
-}: {
-  pathname: string
-  badgeFor: (i: NavItem) => number
-  children: ReactNode
-}) {
+function DesktopShell({ pathname, badgeFor, children }: { pathname: string; badgeFor: (i: NavItem) => number; children: ReactNode }) {
   const role = useAuthStore((s) => s.user?.role) ?? 'OPERATOR'
   const hidden = useUiStore((s) => s.sidebarHidden)
-  const toggle = useUiStore((s) => s.toggleSidebar)
+  const toggleStore = useUiStore((s) => s.toggleSidebar)
+  // The sidebar collapses to nothing, then the floating pill appears in its corner; opening
+  // reverses it. `closing` keeps the sidebar mounted while it shrinks, so the two never coexist
+  // in the DOM for long. Nothing animates on first load: only after a toggle.
+  const [closing, setClosing] = useState(false)
+  const [animated, setAnimated] = useState(false)
+  const reduced = useMediaQuery('(prefers-reduced-motion: reduce)')
+  const toggle = useCallback(() => {
+    setAnimated(true)
+    if (!hidden && !reduced) {
+      setClosing(true)
+      setTimeout(() => setClosing(false), 260)
+    }
+    toggleStore()
+  }, [hidden, reduced, toggleStore])
   useSidebarShortcut(toggle)
   const groups = NAV_GROUPS[role]
+  const showAside = !hidden || closing
 
   return (
     <div className="flex h-dvh overflow-hidden">
-      {!hidden && (
-        <aside className="flex w-60 shrink-0 flex-col bg-bg-subtle" aria-label="Main navigation" data-testid="sidebar">
-          <div className="flex h-16 items-center justify-between ps-5 pe-3">
-            <Wordmark />
-            <Tooltip label="Hide sidebar  [">
-              <button
-                type="button"
-                onClick={toggle}
-                aria-label="Hide sidebar"
-                data-testid="sidebar-hide"
-                className="pressable inline-flex size-8 items-center justify-center rounded-full text-text-tertiary hover:bg-bg-muted hover:text-text"
-              >
-                <PanelLeftClose className="size-4" strokeWidth={1.75} />
-              </button>
-            </Tooltip>
-          </div>
-          <nav className="flex-1 space-y-6 overflow-y-auto px-3 pt-2 pb-4">
-            {groups.map((g) => (
-              <div key={g.label}>
-                <p className="mb-1 px-3 text-xs font-medium text-text-tertiary">{g.label}</p>
-                <ul className="space-y-0.5">
-                  {g.items.map((item) => {
-                    const active = isActive(pathname, item)
-                    const Icon = item.icon
-                    return (
-                      <li key={item.to}>
-                        <Link
-                          to={item.to}
-                          data-testid={navTestId(item)}
-                          aria-current={active ? 'page' : undefined}
-                          className={cn(
-                            'flex h-9 items-center gap-2.5 rounded-full px-3 text-sm transition-colors duration-100',
-                            active ? 'bg-bg-surface font-medium text-text shadow-border' : 'text-text-secondary hover:bg-bg-muted hover:text-text',
-                          )}
-                        >
-                          <Icon className={cn('size-4', active ? 'text-text' : 'text-text-tertiary')} strokeWidth={active ? 2 : 1.75} />
-                          <span className="flex-1">{item.label}</span>
-                          <Count n={badgeFor(item)} />
-                        </Link>
-                      </li>
-                    )
-                  })}
-                </ul>
+      {showAside && (
+        <aside
+          className={cn(
+            'shrink-0 overflow-hidden bg-bg-subtle',
+            'transition-[width] duration-[240ms] ease-(--ease-drawer) motion-reduce:transition-none',
+            hidden ? 'w-0' : 'w-60',
+            animated && 'starting:w-0',
+          )}
+          aria-label="Main navigation"
+          data-testid="sidebar"
+          inert={hidden}
+        >
+          <div
+            className={cn(
+              'flex h-full w-60 flex-col transition-opacity duration-150 motion-reduce:transition-none',
+              hidden ? 'opacity-0' : 'opacity-100',
+              animated && 'starting:opacity-0',
+            )}
+          >
+            <div className="flex h-16 items-center justify-between ps-5 pe-3">
+              <Wordmark />
+              <Tooltip label="Hide sidebar  [">
+                <button
+                  type="button"
+                  onClick={toggle}
+                  aria-label="Hide sidebar"
+                  data-testid="sidebar-hide"
+                  className="pressable inline-flex size-8 items-center justify-center rounded-full text-text-tertiary hover:bg-bg-muted hover:text-text"
+                >
+                  <PanelLeftClose className="size-4" strokeWidth={1.75} />
+                </button>
+              </Tooltip>
+            </div>
+            <nav className="flex-1 space-y-6 overflow-y-auto px-3 pt-2 pb-4">
+              {groups.map((g) => (
+                <div key={g.label}>
+                  <p className="mb-1 px-3 text-xs font-medium text-text-tertiary">{g.label}</p>
+                  <ul className="space-y-0.5">
+                    {g.items.map((item) => {
+                      const active = isActive(pathname, item)
+                      const Icon = item.icon
+                      return (
+                        <li key={item.to}>
+                          <Link
+                            to={item.to}
+                            data-testid={navTestId(item)}
+                            aria-current={active ? 'page' : undefined}
+                            className={cn(
+                              'flex h-9 items-center gap-2.5 rounded-full px-3 text-sm transition-colors duration-100',
+                              active
+                                ? 'bg-bg-surface font-medium text-text shadow-border'
+                                : 'text-text-secondary hover:bg-bg-muted hover:text-text',
+                            )}
+                          >
+                            <Icon className={cn('size-4', active ? 'text-text' : 'text-text-tertiary')} strokeWidth={active ? 2 : 1.75} />
+                            <span className="flex-1">{item.label}</span>
+                            <Count n={badgeFor(item)} />
+                          </Link>
+                        </li>
+                      )
+                    })}
+                  </ul>
+                </div>
+              ))}
+            </nav>
+            <div className="space-y-1 p-3">
+              <ConnectionStatus quiet className="h-8 px-3 text-xs" />
+              <div className="flex items-center gap-1">
+                <div className="min-w-0 flex-1">
+                  <UserMenu />
+                </div>
+                <NotificationBell />
               </div>
-            ))}
-          </nav>
-          <div className="space-y-1 p-3">
-            <ConnectionStatus quiet className="h-8 px-3 text-xs" />
-            <div className="flex items-center gap-1">
-              <div className="min-w-0 flex-1">
-                <UserMenu />
-              </div>
-              <NotificationBell />
             </div>
           </div>
         </aside>
       )}
 
-      {hidden && (
+      {hidden && !closing && (
         <div
-          className="fixed top-3 start-3 z-40 flex flex-col items-center gap-1 rounded-full bg-bg-surface/90 p-1 shadow-overlay backdrop-blur-md"
+          className={cn(
+            'fixed top-3 start-3 z-40 flex origin-top-left flex-col items-center gap-1 rounded-full bg-bg-surface/90 p-1 shadow-overlay backdrop-blur-md',
+            animated && 'animate-pill-in',
+          )}
           aria-label="Main navigation"
           role="navigation"
           data-testid="floating-controls"
@@ -239,28 +285,30 @@ function DesktopShell({
             </button>
           </Tooltip>
           <span className="my-0.5 h-px w-5 bg-separator" aria-hidden />
-          {groups.flatMap((g) => g.items).map((item) => {
-            const active = isActive(pathname, item)
-            const Icon = item.icon
-            const n = badgeFor(item)
-            return (
-              <Tooltip key={item.to} label={item.label}>
-                <Link
-                  to={item.to}
-                  aria-label={item.label}
-                  aria-current={active ? 'page' : undefined}
-                  data-testid={navTestId(item)}
-                  className={cn(
-                    'pressable relative inline-flex size-9 items-center justify-center rounded-full transition-colors duration-100',
-                    active ? 'bg-ink text-text-on-ink' : 'text-text-secondary hover:bg-bg-muted hover:text-text',
-                  )}
-                >
-                  <Icon className="size-4" strokeWidth={active ? 2 : 1.75} />
-                  {n > 0 && <span className="absolute top-1 end-1 size-2 rounded-full bg-accent-solid ring-2 ring-bg-surface" />}
-                </Link>
-              </Tooltip>
-            )
-          })}
+          {groups
+            .flatMap((g) => g.items)
+            .map((item) => {
+              const active = isActive(pathname, item)
+              const Icon = item.icon
+              const n = badgeFor(item)
+              return (
+                <Tooltip key={item.to} label={item.label}>
+                  <Link
+                    to={item.to}
+                    aria-label={item.label}
+                    aria-current={active ? 'page' : undefined}
+                    data-testid={navTestId(item)}
+                    className={cn(
+                      'pressable relative inline-flex size-9 items-center justify-center rounded-full transition-colors duration-100',
+                      active ? 'bg-ink text-text-on-ink' : 'text-text-secondary hover:bg-bg-muted hover:text-text',
+                    )}
+                  >
+                    <Icon className="size-4" strokeWidth={active ? 2 : 1.75} />
+                    {n > 0 && <span className="absolute top-1 end-1 size-2 rounded-full bg-accent-solid ring-2 ring-bg-surface" />}
+                  </Link>
+                </Tooltip>
+              )
+            })}
           <span className="my-0.5 h-px w-5 bg-separator" aria-hidden />
           <NotificationBell />
           <UserMenu compact />
@@ -268,7 +316,14 @@ function DesktopShell({
         </div>
       )}
 
-      <main className={cn('relative min-h-0 min-w-0 flex-1 overflow-y-auto', hidden && 'ps-14')} id="main">
+      <main
+        className={cn(
+          'relative min-h-0 min-w-0 flex-1 overflow-y-auto outline-none transition-[padding] duration-[240ms] ease-(--ease-drawer) motion-reduce:transition-none',
+          hidden && 'ps-14',
+        )}
+        id="main"
+        tabIndex={-1}
+      >
         {children}
       </main>
     </div>

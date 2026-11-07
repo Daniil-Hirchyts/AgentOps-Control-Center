@@ -45,7 +45,7 @@ export function RunAnalysisDialog({ caseId, disabled }: { caseId: Id; disabled?:
         err instanceof ApiError && err.code === 'llm_unavailable'
           ? 'The model is unavailable right now. Try again in a moment.'
           : errorMessage(err)
-      toast.error('Could not start analysis', { description: msg })
+      toast.error('Unable to start the analysis', { description: msg })
     }
   }
 

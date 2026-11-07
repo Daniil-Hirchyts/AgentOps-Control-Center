@@ -91,7 +91,7 @@ export function ConversationView({ userId }: { userId: Id }) {
         <div className="flex-1 px-6">
           <ErrorState
             error={conversation.error}
-            title="Could not load the conversation"
+            title="Unable to load the conversation"
             onRetry={() => void conversation.refetch()}
           />
         </div>

@@ -62,7 +62,7 @@ export function PipelineTrack({ run, compact = false, className }: { run: RunLik
           <span
             key={s.id}
             className={cn(
-              'h-1.5 w-3.5 rounded-full',
+              'h-1.5 w-3.5 rounded-full transition-colors duration-200',
               s.state === 'done' && 'bg-ink',
               s.state === 'active' && 'animate-pulse-soft bg-accent-solid',
               s.state === 'waiting' && 'bg-warning-solid',
@@ -102,7 +102,12 @@ export function PipelineTrack({ run, compact = false, className }: { run: RunLik
                 {next && <Connector state={s.state} nextState={next.state} live={!!live} />}
               </div>
               <div className="min-w-0">
-                <p className={cn('truncate text-xs font-medium @lg:text-13', s.state === 'upcoming' || s.state === 'skipped' ? 'text-text-tertiary' : 'text-text')}>
+                <p
+                  className={cn(
+                    'truncate text-xs font-medium @lg:text-13',
+                    s.state === 'upcoming' || s.state === 'skipped' ? 'text-text-tertiary' : 'text-text',
+                  )}
+                >
                   {s.label}
                 </p>
                 <p className="hidden truncate text-xs text-text-tertiary @md:block" title={s.detail}>
@@ -135,6 +140,7 @@ function Connector({ state, nextState, live }: { state: StageState; nextState: S
         strokeWidth={1.5}
         strokeLinecap="round"
         className={cn(
+          'transition-[stroke] duration-200',
           live ? 'stroke-accent-solid' : solid ? 'stroke-ink' : 'stroke-border-strong',
           live && 'motion-safe:animate-flow',
         )}

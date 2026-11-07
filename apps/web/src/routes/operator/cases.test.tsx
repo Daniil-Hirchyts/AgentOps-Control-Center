@@ -47,7 +47,7 @@ describe('CasesPage list states', () => {
     expect(err).toHaveTextContent('Database unavailable')
 
     fail = false
-    await userEvent.click(screen.getByRole('button', { name: /retry/i }))
+    await userEvent.click(screen.getByRole('button', { name: /try again/i }))
     expect(await screen.findByText('Unusual consulting invoice')).toBeInTheDocument()
     expect(screen.getByTestId('case-status')).toHaveTextContent('Flagged for review')
     // rows navigate through a real link, not a clickable <tr>

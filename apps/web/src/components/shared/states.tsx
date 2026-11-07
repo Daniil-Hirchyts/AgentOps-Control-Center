@@ -18,10 +18,10 @@ export function EmptyState({
   return (
     <div
       data-testid="empty-state"
-      className={cn('flex flex-col items-start gap-1 py-10 text-start sm:items-center sm:text-center', className)}
+      className={cn('flex animate-fade-up flex-col items-start gap-1 py-10 text-start sm:items-center sm:text-center', className)}
     >
       <p className="text-sm font-medium text-text">{title}</p>
-      {description && <p className="max-w-sm text-13 text-text-secondary">{description}</p>}
+      {description && <p className="max-w-sm text-13 text-pretty text-text-secondary">{description}</p>}
       {action && <div className="mt-3">{action}</div>}
     </div>
   )
@@ -29,7 +29,7 @@ export function EmptyState({
 
 export function ErrorState({
   error,
-  title = 'Could not load data',
+  title = 'Unable to load this page',
   onRetry,
   className,
 }: {
@@ -44,10 +44,12 @@ export function ErrorState({
         <span aria-hidden className="size-2 rounded-full bg-danger-solid" />
         {title}
       </p>
-      {error !== undefined && <p className="max-w-md text-13 text-text-secondary">{errorMessage(error)}</p>}
+      <p className="max-w-md text-13 text-text-secondary">
+        {error !== undefined ? `${errorMessage(error)} ` : ''}Check your connection, then try again.
+      </p>
       {onRetry && (
         <Button size="sm" className="mt-3" onClick={onRetry}>
-          Retry
+          Try again
         </Button>
       )}
     </div>

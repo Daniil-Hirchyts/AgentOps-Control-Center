@@ -33,8 +33,8 @@ export function PageHeader({
       {back && <div className="mb-2">{back}</div>}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0 space-y-1.5">
-          <h1 className="text-xl font-semibold tracking-[-0.01em] sm:text-2xl sm:tracking-[-0.015em]">{title}</h1>
-          {meta && <div className="text-13 text-text-secondary">{meta}</div>}
+          <h1 className="text-xl font-semibold text-balance tracking-[-0.01em] sm:text-2xl sm:tracking-[-0.015em]">{title}</h1>
+          {meta && <div className="text-13 text-pretty text-text-secondary">{meta}</div>}
         </div>
         {actions && <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div>}
       </div>

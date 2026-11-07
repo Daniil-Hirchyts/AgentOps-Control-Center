@@ -241,6 +241,10 @@
   --animate-message-in: message-in 200ms var(--ease-out);
   --animate-pulse-soft: pulse-soft 1.6s ease-in-out infinite;
   --animate-flow: flow 1.2s linear infinite;
+  --animate-state-pulse: state-pulse 1.2s var(--ease-out) both;
+  --animate-row-in: row-in 240ms var(--ease-out) both;
+  --animate-fade-up: fade-up 300ms var(--ease-out) both;
+  --animate-pill-in: pill-in 200ms var(--ease-out) both;
 
   @keyframes typing {
     0%,
@@ -305,6 +309,39 @@
   @keyframes flow {
     to {
       stroke-dashoffset: -16;
+    }
+  }
+  /* A ring that grows out of a diagram state and fades: something just happened here. */
+  @keyframes state-pulse {
+    from {
+      opacity: 1;
+      transform: scale(1);
+    }
+    to {
+      opacity: 0;
+      transform: scale(1.18, 1.5);
+    }
+  }
+  @keyframes row-in {
+    from {
+      opacity: 0;
+      transform: translateY(-4px);
+    }
+  }
+  /* The floating controls grow out of the corner the sidebar collapsed into. */
+  @keyframes pill-in {
+    from {
+      opacity: 0;
+      transform: scale(0.96);
+      filter: blur(4px);
+    }
+  }
+  /* Infinite entrances (page sections, panels): opacity, 4px blur, 12px rise. */
+  @keyframes fade-up {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+      filter: blur(4px);
     }
   }
 }
@@ -405,6 +442,14 @@
   #root {
     min-height: 100dvh;
   }
+  /* Scrollbars are hidden everywhere; scroll areas carry their own cue (an edge fade or a
+     peeking item) instead of a bar. Scrolling by wheel, touch and keyboard is unchanged. */
+  * {
+    scrollbar-width: none;
+  }
+  *::-webkit-scrollbar {
+    display: none;
+  }
   h1,
   h2,
   h3 {
@@ -449,6 +494,17 @@
   .pressable:active:not(:disabled):not([aria-disabled='true']) {
     transform: scale(0.96);
   }
+  .scrollbar-none {
+    scrollbar-width: none;
+  }
+  .animate-state-pulse {
+    transform-box: fill-box;
+    transform-origin: center;
+  }
+  /* Horizontal scrollers fade at whichever edge has more content. */
+  .scroll-fade-x {
+    mask-image: linear-gradient(to right, transparent, #000 24px, #000 calc(100% - 24px), transparent);
+  }
 }
 
 /* Reduced motion: keep opacity fades, drop transforms/blur. */
@@ -473,6 +529,29 @@
   [data-motion='transform'] {
     transform: none !important;
   }
+  @keyframes state-pulse {
+    from {
+      opacity: 1;
+    }
+    to {
+      opacity: 0;
+    }
+  }
+  @keyframes row-in {
+    from {
+      opacity: 0;
+    }
+  }
+  @keyframes fade-up {
+    from {
+      opacity: 0;
+    }
+  }
+  @keyframes pill-in {
+    from {
+      opacity: 0;
+    }
+  }
 }
 
 /* Sonner toasts restyled to tokens */
@@ -494,7 +573,7 @@
 [data-sonner-toaster] [data-sonner-toast] [data-button] {
   background: var(--color-bg-muted);
   color: var(--color-text);
-  border-radius: var(--radius-md);
+  border-radius: 9999px;
   font-weight: 500;
 }
 
