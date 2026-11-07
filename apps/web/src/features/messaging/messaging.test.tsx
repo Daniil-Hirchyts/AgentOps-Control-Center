@@ -8,6 +8,7 @@ import type { ClientFrame } from '@/lib/ws-events'
 import { makeUser, mockFetch, renderWithProviders, signIn } from '@/test/utils'
 import { useRealtimeStore } from '@/stores/realtime'
 import { ConversationView } from './conversation-view'
+import { fetchFullHistory, HISTORY_PAGE } from './hooks'
 
 const alice = makeUser({ id: 1, username: 'alice', role: 'OPERATOR' })
 const bob = makeUser({ id: 2, username: 'bob', role: 'REVIEWER', online: true })
@@ -163,5 +164,35 @@ describe('Conversation', () => {
       )
     })
     await waitFor(() => expect(screen.queryByTestId('typing-indicator')).not.toBeInTheDocument())
+  })
+})
+
+describe('fetchFullHistory', () => {
+  it('reads every page back to the first message, oldest first', async () => {
+    signIn(alice)
+    const all: MessageDto[] = Array.from({ length: 1201 }, (_, i) => ({
+      id: i + 1,
+      expediteurId: i % 2 ? 1 : 2,
+      destinataireId: i % 2 ? 2 : 1,
+      contenu: `m${i + 1}`,
+      dateEnvoi: '2026-09-20T09:00:00Z',
+    }))
+    const fetchMock = mockFetch([
+      {
+        path: '/api/messages/2',
+        handler: ({ url }) => {
+          const limit = Number(url.searchParams.get('limit'))
+          const before = Number(url.searchParams.get('beforeId') ?? Infinity)
+          return { body: all.filter((m) => m.id < before).slice(-limit) }
+        },
+      },
+    ])
+
+    const got = await fetchFullHistory(2)
+
+    expect(got).toHaveLength(1201)
+    expect(got[0]!.id).toBe(1)
+    expect(got.at(-1)!.id).toBe(1201)
+    expect(fetchMock).toHaveBeenCalledTimes(Math.ceil(1201 / HISTORY_PAGE))
   })
 })

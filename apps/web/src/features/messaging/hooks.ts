@@ -58,13 +58,33 @@ export function mergeHistory(server: MessageDto[], local: ChatMessage[] | undefi
   return [...base, ...leftovers]
 }
 
+export const HISTORY_PAGE = 500
+const MAX_HISTORY_PAGES = 40
+
+/**
+ * The whole conversation, oldest first. The API returns the newest page; older pages are read
+ * with `beforeId` until a short page shows the start was reached, so a reconnect always shows
+ * the complete history, not only the last page.
+ */
+export async function fetchFullHistory(userId: Id): Promise<MessageDto[]> {
+  let all: MessageDto[] = []
+  let beforeId: Id | undefined
+  for (let i = 0; i < MAX_HISTORY_PAGES; i++) {
+    const page = await api.messages(userId, { limit: HISTORY_PAGE, beforeId })
+    all = [...page, ...all]
+    if (page.length < HISTORY_PAGE) break
+    beforeId = page[0]!.id
+  }
+  return all
+}
+
 export function useConversation(userId: Id) {
   const qc = useQueryClient()
   const meId = useAuthStore((s) => s.user?.id ?? -1)
   return useQuery({
     queryKey: qk.conversation(userId),
     queryFn: async () => {
-      const server = await api.messages(userId)
+      const server = await fetchFullHistory(userId)
       return mergeHistory(server, qc.getQueryData<ChatMessage[]>(qk.conversation(userId)), meId)
     },
     staleTime: 15_000,
