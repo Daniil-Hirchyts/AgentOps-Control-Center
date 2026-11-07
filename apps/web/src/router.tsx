@@ -188,17 +188,9 @@ export const conversationRoute = createRoute({
   },
 })
 
-/** Dev-only state gallery (every pipeline state with mock data); never shipped in builds. */
-const devStatesRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: '/dev/states',
-  component: lazyRouteComponent(() => import('@/routes/dev-states'), 'DevStatesPage'),
-})
-
 export const routeTree = rootRoute.addChildren([
   loginRoute,
   registerRoute,
-  ...(import.meta.env.DEV ? [devStatesRoute] : []),
   appRoute.addChildren([
     indexRoute,
     operatorRoute.addChildren([operatorIndexRoute, casesRoute, caseDetailRoute, runsRoute, runDetailRoute, auditRoute]),

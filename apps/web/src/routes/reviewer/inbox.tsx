@@ -36,7 +36,7 @@ export function ReviewerInbox() {
 
   return (
     <PageContainer className="max-w-3xl">
-      <PageHeader title="Approval inbox" meta="Actions the agent wants to take. Nothing runs until you decide." />
+      <PageHeader title="Approval inbox" />
 
       <div
         className="mb-4 inline-flex rounded-lg bg-bg-muted p-0.5"

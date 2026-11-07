@@ -28,7 +28,6 @@ export function AuditPage({
     <PageContainer>
       <PageHeader
         title="Audit log"
-        meta="Append-only record of every agent step and human decision."
         actions={
           <div className="w-64 max-w-full">
             <Select

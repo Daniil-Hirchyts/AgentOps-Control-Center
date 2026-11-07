@@ -8,7 +8,7 @@ import { InvoiceSheet } from '@/components/shared/invoice-visuals'
 import { SystemMessage } from '@/components/prompt-kit/system-message'
 import { Evidence, ReasoningChain } from '@/features/agents/analysis'
 import { runOfApproval } from '@/features/agents/pipeline'
-import { PipelineFigure } from '@/features/agents/pipeline-figure'
+import { PipelineCard } from '@/features/agents/pipeline-card'
 import { BackLink, MetaDot, PageHeader, Section } from '@/components/shared/page-header'
 import { ErrorState } from '@/components/shared/states'
 import { ApprovalStatusBadge } from '@/components/shared/status'
@@ -120,7 +120,7 @@ export function ApprovalDetailPage({ approvalId }: { approvalId: number }) {
     ? 'This approval is decided and can no longer change.'
     : !isAssignee
       ? `Only ${a.reviewerUsername} can decide on this approval.`
-      : 'Your decision is recorded in the audit log.'
+      : null
 
   return (
     <PageContainer className="max-w-3xl pb-40 md:pb-8">
@@ -160,7 +160,7 @@ export function ApprovalDetailPage({ approvalId }: { approvalId: number }) {
         <Evidence invoice={a.invoice} risk={a.riskLevel} />
       </section>
 
-      <PipelineFigure run={runOfApproval(a)} className="mb-10" />
+      <PipelineCard run={runOfApproval(a)} className="mb-10" />
 
       <div className="space-y-10">
         <Section title="Agent reasoning">

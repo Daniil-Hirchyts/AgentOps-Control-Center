@@ -105,7 +105,6 @@ export function CasePreview({
       data-risk={risk}
     >
       <div className="flex items-center gap-3 sm:flex-col sm:items-center sm:gap-1">
-        <p className="text-xs text-text-tertiary">Likely verdict</p>
         <RiskGauge level={risk} size={76} />
       </div>
       <DeviationBar

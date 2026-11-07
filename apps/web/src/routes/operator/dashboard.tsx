@@ -24,7 +24,7 @@ export function OperatorDashboard() {
 
   return (
     <PageContainer className="max-w-6xl">
-      <PageHeader title="Overview" meta="Every run on the agent line, from intake to the audit log." actions={<NewCaseDialog />} />
+      <PageHeader title="Overview" actions={<NewCaseDialog />} />
 
       {runs.isError ? (
         <ErrorState error={runs.error} onRetry={() => void runs.refetch()} />

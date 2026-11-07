@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { AgentCalls, Evidence, ReasoningChain } from '@/features/agents/analysis'
 import { isRunActive, useRun } from '@/features/agents/hooks'
-import { PipelineFigure } from '@/features/agents/pipeline-figure'
+import { PipelineCard } from '@/features/agents/pipeline-card'
 import { AuditEventList } from '@/features/audit/audit-event-list'
 import { useAuditEvents } from '@/features/audit/hooks'
 import { useUsers } from '@/features/messaging/hooks'
@@ -73,7 +73,7 @@ export function RunDetailPage({ runId }: { runId: number }) {
         }
       />
 
-      <PipelineFigure run={r} className="mb-10" />
+      <PipelineCard run={r} className="mb-10" />
 
       <div className="grid gap-x-10 gap-y-12 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,22rem)]">
         <div className="min-w-0 space-y-12">
@@ -81,7 +81,7 @@ export function RunDetailPage({ runId }: { runId: number }) {
             <Analysis run={r} />
           </Section>
 
-          <Section title="Agent calls" aside={<span className="text-text-tertiary">Each step the agent took</span>}>
+          <Section title="Agent calls">
             <AgentCalls run={r} />
           </Section>
 
