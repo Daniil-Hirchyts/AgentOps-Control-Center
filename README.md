@@ -19,19 +19,17 @@ trail.</sub>
 ## Overview
 
 Companies want agentic AI that acts, not just answers, but an action with consequences (blocking a payment, changing
-a record) cannot be left to a model on its own. AgentOps is an end-to-end, full-stack system built around that problem:
-an LLM agent analyses a business case and proposes a tool call, guardrails and policy run in the backend, a human
-reviewer decides in real time, and only then does the action run. It is the kind of agentic workflow automation that
-gets deployed inside a customer's existing process, with governance and observability built in.
+a record) cannot be left to AI agents on their own. AgentOps is an end-to-end, full-stack system built around that
+problem: the LLM orchestration layer has an agent analyse a business case and propose a tool call with structured
+outputs, guardrails and policy run in the backend, a human-in-the-loop (HITL) reviewer decides in real time, and only
+then does the action run. It is the kind of enterprise workflow automation that gets deployed inside a customer's
+existing process, with AI governance and observability built in.
 
 The use case is accounts-payable fraud review. An operator submits an invoice; the agent compares it with the vendor's
 history, assesses the risk and recommends flagging it; a reviewer gets the request on their phone, discusses it with
 the operator in the built-in chat, and approves or rejects. The data is synthetic; the patterns (approval gates,
-idempotent actions, audit trail, model-agnostic integration) are the ones an enterprise deployment needs.
-
-**Keywords:** agentic AI · AI agents · LLM orchestration · tool calling · structured outputs · guardrails ·
-human-in-the-loop (HITL) · AI governance · observability · audit trail · enterprise workflow automation ·
-OpenAI-compatible APIs · real-time systems · full-stack · Rust · TypeScript · React · PostgreSQL · Docker
+idempotent actions, audit trail, model-agnostic integration over OpenAI-compatible APIs) are the ones an enterprise
+deployment needs.
 
 ## What this project shows
 
@@ -91,7 +89,7 @@ flowchart LR
 
 ## Architecture
 
-![Architecture](docs/architecture.svg)
+<img src="docs/architecture.png" alt="Architecture: laptop and phone clients reach the Rust server through Caddy; the server holds the REST API, authentication, the WebSocket hub and the agent worker, talks SQL to PostgreSQL and HTTP to any OpenAI-compatible LLM provider" width="100%"/>
 
 Clients only talk to the server, through a single origin. The agent worker runs inside the server process, calls the
 LLM, writes every step to PostgreSQL and pushes status changes over the WebSocket hub. Data model, state machine,
