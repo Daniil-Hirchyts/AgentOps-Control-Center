@@ -61,7 +61,7 @@ export function Tool({
   return (
     <div className={cn('surface overflow-hidden rounded-xl', className)} data-testid={testId} data-state={state}>
       <Collapsible open={open} onOpenChange={setOpen} disabled={!hasBody}>
-        <CollapsibleTrigger className="group flex min-h-11 w-full items-center gap-3 px-3 text-start transition-colors duration-150 hover:bg-bg-subtle disabled:cursor-default disabled:hover:bg-transparent">
+        <CollapsibleTrigger className="group flex min-h-11 w-full items-center gap-3 px-3 text-start transition-colors duration-150 hover:bg-bg-subtle focus-visible:-outline-offset-2 disabled:cursor-default disabled:hover:bg-transparent">
           {toolPart.avatar}
           {!toolPart.avatar && toolPart.icon && (
             <span className="inline-flex size-7 shrink-0 items-center justify-center rounded-md bg-bg-muted text-text-secondary [&_svg]:size-4">

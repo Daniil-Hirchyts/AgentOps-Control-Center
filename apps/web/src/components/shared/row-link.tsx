@@ -17,4 +17,5 @@ export function RowLink({ className, ...props }: LinkComponentProps<'a'>) {
   )
 }
 
-export const rowLinkClass = 'relative transition-colors duration-100 hover:bg-bg-subtle'
+/** Hover fills the row with rounded ends; the table bleeds 12px so the fill never touches the text. */
+export const rowLinkClass = 'relative transition-colors duration-150 hover:bg-bg-muted/70'

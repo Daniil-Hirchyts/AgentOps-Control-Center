@@ -46,7 +46,7 @@ export function CaseDetailPage({ caseId }: { caseId: number }) {
         {back}
         <ErrorState
           error={caseQ.error}
-          title={caseQ.error instanceof ApiError && caseQ.error.isNotFound ? 'Case not found' : 'Could not load case'}
+          title={caseQ.error instanceof ApiError && caseQ.error.isNotFound ? 'Case not found' : 'Unable to load this case'}
           onRetry={() => void caseQ.refetch()}
         />
       </PageContainer>
@@ -80,7 +80,7 @@ export function CaseDetailPage({ caseId }: { caseId: number }) {
         <div className="min-w-0 space-y-12">
           <Section
             title="Against the vendor’s typical amount"
-            aside={<span className="text-text-tertiary">{latest?.output ? `From run #${latest.id}` : 'Preview'}</span>}
+            aside={<span className="text-text-tertiary">{latest?.output ? `From run #${latest.id}` : 'Estimate until the first analysis'}</span>}
           >
             <DeviationBar
               invoice={c.invoice}
